@@ -82,13 +82,17 @@ function DonePanel({ order, onReset, onViewSummary }) {
         <PartyPopper className="h-7 w-7" />
       </motion.span>
 
-      <h2 className="mt-5 text-xl font-semibold tracking-tight text-ink-900">
-        {order.customerName}，記好了！
-      </h2>
-      <p className="mt-2 text-sm leading-relaxed text-ink-500">
+      <h2 className="mt-5 text-xl font-semibold tracking-tight text-ink-900">點餐完成</h2>
+      <p className="mt-1.5 text-sm text-ink-500">{order.customerName}，你的餐點已經送出。</p>
+
+      <div className="mt-5 rounded-2xl bg-slate-50 px-5 py-4 text-sm leading-relaxed text-ink-700">
         {describe(order.meals, findMeal)}
         <br />
         {describe(order.drinks, findDrink)}
+      </div>
+
+      <p className="mt-4 text-xs leading-relaxed text-ink-400">
+        到「大家點的」就能看到自己在清單裡，代表確實點成功了。
       </p>
 
       <div className="mt-7 flex flex-col gap-2.5 sm:flex-row">
@@ -97,7 +101,7 @@ function DonePanel({ order, onReset, onViewSummary }) {
           onClick={onViewSummary}
           className="focus-ring flex-1 rounded-full bg-ink-900 px-4 py-3 text-sm font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5"
         >
-          看大家點了什麼
+          到「大家點的」確認
         </button>
         <button
           type="button"
