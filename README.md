@@ -95,6 +95,13 @@ firebase deploy --only firestore:rules
 2. **Source** 選 **GitHub Actions**（不是 Deploy from a branch）
 3. 回到 **Actions** 分頁，確認 `Deploy to GitHub Pages` 這個 workflow 跑完（約 1～2 分鐘）
 
+> **第 2 步一定要做。** 如果 Source 停留在「Deploy from a branch」，
+> GitHub 會另外跑一個 `pages build and deployment`，把 repo 根目錄當成網站發佈，
+> 並且覆蓋掉本 workflow 的部署結果。根目錄的 `index.html` 是 Vite 的開發進入點
+> （引用 `/src/main.jsx`，正式站上不存在），因此網站會顯示**一片空白**。
+> 症狀是：Actions 顯示部署成功，但打開網址什麼都沒有，而且 Actions 清單裡
+> 同時有兩個部署紀錄在跑。
+
 完成後網址是：
 
 ```
