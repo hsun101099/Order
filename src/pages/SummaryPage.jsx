@@ -1,6 +1,17 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Cloud, Copy, Download, HardDrive, Loader2, Plus, RotateCcw, Soup } from 'lucide-react';
+import {
+  Check,
+  Cloud,
+  CloudOff,
+  Copy,
+  Download,
+  HardDrive,
+  Loader2,
+  Plus,
+  RotateCcw,
+  Soup,
+} from 'lucide-react';
 import TallyCard from '../components/TallyCard.jsx';
 import PersonList from '../components/PersonList.jsx';
 import { formatCurrency } from '../utils/format.js';
@@ -47,7 +58,16 @@ function EmptyState({ onNavigate }) {
   );
 }
 
-export default function SummaryPage({ orders, tally, source, onRemove, onReset, onNavigate, onNotify }) {
+export default function SummaryPage({
+  orders,
+  tally,
+  source,
+  offline,
+  onRemove,
+  onReset,
+  onNavigate,
+  onNotify,
+}) {
   const [copied, setCopied] = useState(false);
   const [exporting, setExporting] = useState(false);
 
@@ -169,10 +189,15 @@ export default function SummaryPage({ orders, tally, source, onRemove, onReset, 
         </button>
 
         <p className="flex items-center gap-1.5 text-[11px] text-ink-400">
-          {source === 'firebase' ? (
+          {source === 'firebase' && !offline ? (
             <>
               <Cloud className="h-3.5 w-3.5 text-success" />
               已連線 Firebase，大家的點餐即時同步
+            </>
+          ) : source === 'firebase' ? (
+            <>
+              <CloudOff className="h-3.5 w-3.5 text-amber-500" />
+              目前離線，恢復連線後會自動同步
             </>
           ) : (
             <>

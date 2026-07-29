@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore } from 'firebase/firestore';
 
 /**
  * Firebase 設定由環境變數提供（見 .env.example）。
@@ -26,7 +26,10 @@ let firestore = null;
 
 if (isFirebaseConfigured) {
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  firestore = getFirestore(app);
+
+  // 公司網路、VPN 或代理伺服器常會擋掉 Firestore 預設的串流連線，
+  // 開啟自動偵測後會在必要時改用 long polling，避免一直處於離線狀態。
+  firestore = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
 }
 
 export const db = firestore;

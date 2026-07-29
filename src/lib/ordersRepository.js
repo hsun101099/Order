@@ -1,5 +1,4 @@
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -8,6 +7,7 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
   writeBatch,
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured, ORDERS_COLLECTION } from './firebase.js';
@@ -97,10 +97,14 @@ const firebaseRepository = {
   },
   async add(order) {
     const { id, createdAt, ...payload } = order;
-    const ref = await addDoc(collection(db, ORDERS_COLLECTION), {
-      ...payload,
-      createdAt: serverTimestamp(),
+
+    // 文件 ID 由用戶端產生，因此不必等待伺服器回應就能立刻顯示結果；
+    // Firestore 會在背景送出（離線時排入佇列，恢復連線後自動補寫）。
+    const ref = doc(collection(db, ORDERS_COLLECTION));
+    setDoc(ref, { ...payload, createdAt: serverTimestamp() }).catch(() => {
+      /* 寫入失敗時畫面上方的離線提示會反映實際狀態。 */
     });
+
     return { ...order, id: ref.id };
   },
   async remove(id) {

@@ -70,6 +70,7 @@ export default function App() {
             orders={orders}
             tally={tally}
             source={source}
+            offline={offline}
             onRemove={handleRemove}
             onReset={handleReset}
             onNavigate={setPage}
