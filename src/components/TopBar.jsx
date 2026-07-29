@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { UtensilsCrossed } from 'lucide-react';
+import { APP_NAME } from '../config.js';
 
 const TABS = [
   { id: 'order', label: '我要點' },
@@ -22,7 +23,7 @@ export default function TopBar({ page, onNavigate, count }) {
             <UtensilsCrossed className="h-[18px] w-[18px]" />
           </span>
           <span className="leading-tight">
-            <span className="block text-sm font-semibold tracking-tight text-ink-900">8/4漢堡車點餐</span>
+            <span className="block text-sm font-semibold tracking-tight text-ink-900">{APP_NAME}</span>
             <span className="block text-[11px] text-ink-400">{dayFormatter.format(new Date())}</span>
           </span>
         </div>
