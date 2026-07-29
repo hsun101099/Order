@@ -1,39 +1,25 @@
-# 簡易點餐系統 · Order Studio
+# 今天吃什麼
 
-一套展示型（Prototype）點餐系統，設計語彙參考 Apple / Notion / Linear / Stripe Dashboard：
-極簡、留白充足、卡片式介面、16px 圓角、柔和陰影、微動畫與完整 RWD。
+一個給一群人一起點餐用的小工具。選餐點、選飲料、寫名字，然後在同一頁看到大家點了什麼。
 
-所有資料皆為 Mock Data，操作結果保存在瀏覽器 `localStorage`，沒有任何後端串接。
+沒有後台、沒有報表、沒有流程審核 — 資料存在瀏覽器 `localStorage`，重新整理還在。
 
-## 功能
+## 怎麼用
 
-**點餐流程（三步驟）**
+**我要點（三步，選完自動往下）**
 
-1. 選擇一份主餐：起司牛 / 花生牛 / BBQ 豬 / 酸辣雞腿
-2. 選擇一杯飲料：汽水 / 無糖茶
-3. 填寫取餐姓名（可加備註）→ 送出後顯示訂單編號與金額
+1. 選一份主餐：起司牛 / 花生牛 / BBQ 豬 / 酸辣雞腿
+2. 選一杯飲料：汽水 / 無糖茶
+3. 寫下名字（想備註「不要洋蔥」也可以）
 
-每一份訂單固定為「一份餐點 + 一杯飲料」，因此兩個步驟皆為單選。
+每個人固定一份餐配一杯飲料，所以兩步都是單選。
 
-**訂單總覽**
+**大家點的**
 
-- 四張 Summary Card：總訂單、處理中、已完成、已取消
-- 三張圖表：餐點分布（Bar）、飲料比例（Donut）、近 8 小時訂單量（Trend）
-- 訂單列表：搜尋（姓名 / 訂單編號 / 餐點 / 飲料 / 金額）、狀態 Filter、進度百分比、狀態 Badge
-- 等候提醒：未完成且建立超過 20 分鐘的訂單整列轉淡紅、出現「⚠ 等候逾 20 分」標記，並累計於右上角通知
-- 點擊任一筆開啟右側 Drawer（不跳頁）：訂單摘要、可展開的流程 Timeline、備註編輯、推進流程 / 取消訂單
-
-**狀態流**
-
-`待製作 → 製作中 → 可取餐 → 已完成`，任何階段皆可取消。
-
-| 狀態 | Badge 顏色 | 進度 |
-| --- | --- | --- |
-| 待製作 | 灰 | 25% |
-| 製作中 | 琥珀 | 60% |
-| 可取餐 | 青綠 | 85% |
-| 已完成 | 綠 | 100% |
-| 已取消 | 紅 | — |
+- 最上面一句話看完：幾個人、各餐幾份、總共多少錢，一鍵「複製訂單」可直接貼到群組
+- 餐點與飲料統整卡：每個品項幾份，以及**點的人是誰**（名字 chip）
+- 每個人點的：頭像、名字、餐點 · 飲料 · 備註、金額，滑過可刪除
+- 「重來一輪」可以清空重新開始
 
 ## 執行方式
 
@@ -57,38 +43,28 @@ npm run preview  # 預覽 build 結果
 ├── postcss.config.js
 └── src
     ├── main.jsx                 # React 進入點
-    ├── App.jsx                  # 版面組合、頁面切換、Drawer / Toast 狀態
-    ├── index.css                # Tailwind 與共用 class（card / focus-ring）
+    ├── App.jsx                  # 頁面切換與共用狀態
+    ├── index.css                # Tailwind 與共用 class
     ├── components
-    │   ├── Sidebar.jsx          # 側邊導覽（桌機固定 / 手機抽屜）
-    │   ├── Header.jsx           # 標題、日期、通知、使用者頭像
-    │   ├── SummaryCard.jsx      # 統計卡片
-    │   ├── Chart.jsx            # BarChart / DonutChart / TrendChart
-    │   ├── SearchBar.jsx        # 搜尋框
-    │   ├── FilterTabs.jsx       # 狀態篩選（Framer Motion layoutId 滑動）
-    │   ├── OrderTable.jsx       # 訂單表格（桌機）＋卡片列表（手機）、逾時判定
-    │   ├── StatusBadge.jsx      # 狀態 Badge
-    │   ├── ProgressBar.jsx      # 進度條
-    │   ├── Drawer.jsx           # 通用右側 Drawer（ESC 關閉、鎖背景捲動）
-    │   ├── OrderDrawer.jsx      # 訂單明細 Drawer 內容
-    │   ├── Timeline.jsx         # 可展開的流程 Timeline
-    │   ├── StepIndicator.jsx    # 點餐步驟指示器
+    │   ├── TopBar.jsx           # 品牌、日期與「我要點 / 大家點的」切換
+    │   ├── StepIndicator.jsx    # 三步驟指示器
     │   ├── OptionCard.jsx       # 餐點 / 飲料選擇卡
+    │   ├── TallyCard.jsx        # 單一品項的統整（幾份 + 誰點的）
+    │   ├── PersonList.jsx       # 每個人點了什麼
     │   └── Toast.jsx            # 操作回饋提示
     ├── pages
-    │   ├── OrderPage.jsx        # 點餐流程與訂單摘要
-    │   └── DashboardPage.jsx    # 統計、圖表與訂單列表
+    │   ├── OrderPage.jsx        # 點餐三步驟
+    │   └── SummaryPage.jsx      # 大家點的統整
     ├── hooks
-    │   └── useOrders.js         # 訂單狀態管理與 localStorage 持久化
+    │   └── useOrders.js         # 訂單資料、統整計算與 localStorage
     ├── data
     │   ├── menu.js              # 餐點、飲料與色彩語彙
-    │   ├── orderStatus.js       # 狀態定義、流程順序、篩選項目
-    │   └── mockOrders.js        # 20 筆展示訂單
+    │   └── mockOrders.js        # 15 筆展示資料
     └── utils
         └── format.js            # 日期、金額、相對時間格式化
 ```
 
-## 設計規格
+## 設計
 
 | 用途 | 色碼 |
 | --- | --- |
@@ -96,17 +72,15 @@ npm run preview  # 預覽 build 結果
 | 卡片 | `#FFFFFF` |
 | Primary | `#2563EB` |
 | Success | `#16A34A` |
-| Warning | `#F59E0B` |
 | Danger | `#DC2626` |
-| 主要文字 | `#0F172A` / `#334155`（深灰，非純黑） |
+| 文字 | `#0F172A` / `#334155`（深灰，非純黑） |
 
-- 圓角：卡片 16px、控制元件 12px
-- 動效：Framer Motion（Drawer 彈簧滑入、卡片進場、進度條與圖表補間、Filter 滑動指示）
-- 圖示：Lucide Icons
-- 圖表：以 SVG / CSS 自繪，不額外引入圖表函式庫
+- 單欄置中版面，最寬 768px，手機到桌機都是同一套節奏
+- 圓角 16–24px、柔和陰影、Hover 微浮起
+- 動效使用 Framer Motion：卡片依序進場、步驟切換、名字 chip 彈入、刪除滑出
+- 圖示使用 Lucide Icons
 
-## 技術假設
+## 可以調整的地方
 
-- 餐點與飲料價格為展示用設定（主餐 110–130 元、飲料 30 元），可於 `src/data/menu.js` 調整
-- 「等候過久」門檻設為 20 分鐘，可於 `src/components/OrderTable.jsx` 的 `DELAY_THRESHOLD_MINUTES` 調整
-- Timeline 各階段的負責人 / 說明為情境示意文字，位於 `src/components/Timeline.jsx`
+- 餐點與飲料價格：`src/data/menu.js`（主餐 110–130、飲料 30，為展示用設定）
+- 展示資料：`src/data/mockOrders.js`

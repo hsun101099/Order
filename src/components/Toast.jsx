@@ -20,7 +20,7 @@ export default function Toast({ toast, onDismiss, duration = 3200 }) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.98 }}
           transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-          className="fixed bottom-6 left-1/2 z-[60] flex w-[calc(100%-2.5rem)] max-w-sm -translate-x-1/2 items-start gap-3 rounded-2xl border border-slate-200/70 bg-white px-4 py-3.5 shadow-card-hover sm:left-6 sm:translate-x-0 lg:left-[19rem]"
+          className="fixed bottom-6 left-1/2 z-[60] flex w-[calc(100%-2.5rem)] max-w-sm -translate-x-1/2 items-start gap-3 rounded-2xl border border-slate-200/70 bg-white px-4 py-3.5 shadow-card-hover"
         >
           <Icon className={`mt-0.5 h-[18px] w-[18px] shrink-0 ${iconColor}`} />
           <div className="min-w-0 flex-1">
