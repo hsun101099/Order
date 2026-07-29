@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Check, PartyPopper, User } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Loader2, PartyPopper, User } from 'lucide-react';
 import StepIndicator from '../components/StepIndicator.jsx';
 import OptionCard from '../components/OptionCard.jsx';
 import { DRINKS, MEALS, findDrink, findMeal } from '../data/menu.js';
@@ -93,6 +93,7 @@ export default function OrderPage({ onSubmit, onNavigate }) {
   const [customerName, setCustomerName] = useState('');
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [placedOrder, setPlacedOrder] = useState(null);
 
   const canContinue = useMemo(() => {
@@ -107,7 +108,7 @@ export default function OrderPage({ onSubmit, onNavigate }) {
     setTimeout(() => setStep((prev) => Math.min(STEPS.length - 1, prev + 1)), 260);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < STEPS.length - 1) {
       setStep((prev) => prev + 1);
       return;
@@ -116,7 +117,15 @@ export default function OrderPage({ onSubmit, onNavigate }) {
       setError('填一下名字，才知道這份是誰的。');
       return;
     }
-    setPlacedOrder(onSubmit({ customerName, mealId, drinkId, note }));
+
+    setSubmitting(true);
+    try {
+      setPlacedOrder(await onSubmit({ customerName, mealId, drinkId, note }));
+    } catch {
+      setError('送出失敗，請再試一次。');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const resetFlow = () => {
@@ -247,13 +256,13 @@ export default function OrderPage({ onSubmit, onNavigate }) {
         <button
           type="button"
           onClick={handleNext}
-          disabled={!canContinue}
+          disabled={!canContinue || submitting}
           className="focus-ring inline-flex items-center gap-2 rounded-full bg-ink-900 px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-ink-400 disabled:hover:translate-y-0"
         >
           {step === STEPS.length - 1 ? (
             <>
-              <Check className="h-4 w-4" />
-              就這樣
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              {submitting ? '送出中…' : '就這樣'}
             </>
           ) : (
             <>

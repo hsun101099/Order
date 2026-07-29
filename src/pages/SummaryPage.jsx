@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Copy, Plus, RotateCcw, Soup } from 'lucide-react';
+import { Check, Cloud, Copy, Download, HardDrive, Loader2, Plus, RotateCcw, Soup } from 'lucide-react';
 import TallyCard from '../components/TallyCard.jsx';
 import PersonList from '../components/PersonList.jsx';
 import { formatCurrency } from '../utils/format.js';
+import { exportOrdersPdf } from '../utils/exportPdf.js';
 
 /** 產出可直接貼到群組的文字版統整。 */
 const buildShareText = (tally) => {
@@ -46,8 +47,21 @@ function EmptyState({ onNavigate }) {
   );
 }
 
-export default function SummaryPage({ orders, tally, onRemove, onReset, onNavigate }) {
+export default function SummaryPage({ orders, tally, source, onRemove, onReset, onNavigate, onNotify }) {
   const [copied, setCopied] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPdf = async () => {
+    setExporting(true);
+    try {
+      const filename = await exportOrdersPdf({ orders, tally });
+      if (filename) onNotify?.({ title: 'PDF 已下載', description: filename });
+    } catch {
+      onNotify?.({ title: 'PDF 匯出失敗', description: '請稍後再試一次。', tone: 'info' });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleCopy = async () => {
     try {
@@ -136,6 +150,37 @@ export default function SummaryPage({ orders, tally, onRemove, onReset, onNaviga
         <div className="mt-3 rounded-[24px] border border-slate-200/70 bg-white px-5 py-1 shadow-card">
           <PersonList orders={orders} onRemove={onRemove} />
         </div>
+      </section>
+
+      {/* 匯出與資料來源 */}
+      <section className="flex flex-col items-center gap-3 pt-2">
+        <button
+          type="button"
+          onClick={handleExportPdf}
+          disabled={exporting}
+          className="focus-ring inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-ink-700 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover disabled:cursor-wait disabled:text-ink-400"
+        >
+          {exporting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          {exporting ? '產生中…' : '下載 PDF'}
+        </button>
+
+        <p className="flex items-center gap-1.5 text-[11px] text-ink-400">
+          {source === 'firebase' ? (
+            <>
+              <Cloud className="h-3.5 w-3.5 text-success" />
+              已連線 Firebase，大家的點餐即時同步
+            </>
+          ) : (
+            <>
+              <HardDrive className="h-3.5 w-3.5" />
+              目前存在這台瀏覽器，設定 Firebase 後會自動改為即時同步
+            </>
+          )}
+        </p>
       </section>
     </div>
   );

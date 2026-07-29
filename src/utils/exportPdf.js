@@ -1,0 +1,211 @@
+import { findDrink, findMeal } from '../data/menu.js';
+import { formatCurrency } from './format.js';
+
+/** A4 直式，以 96dpi 換算的像素寬度，讓截圖比例與 PDF 一致。 */
+const PAGE = { widthMm: 210, heightMm: 297, widthPx: 794, paddingPx: 48 };
+
+const escapeHtml = (value) =>
+  String(value ?? '').replace(
+    /[&<>"']/g,
+    (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]
+  );
+
+const FONT_STACK =
+  '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+
+const tallyRows = (items, unit) =>
+  items
+    .filter((item) => item.count > 0)
+    .map(
+      (item) => `
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;width:130px;font-weight:600;color:#0F172A;">
+            ${escapeHtml(item.name)}
+          </td>
+          <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;width:70px;color:#334155;">
+            ${item.count} ${unit}
+          </td>
+          <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;color:#64748B;line-height:1.7;">
+            ${escapeHtml(item.people.join('、'))}
+          </td>
+        </tr>`
+    )
+    .join('');
+
+const personRows = (orders) =>
+  orders
+    .map((order, index) => {
+      const meal = findMeal(order.mealId)?.name ?? '—';
+      const drink = findDrink(order.drinkId)?.name ?? '—';
+      return `
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;width:36px;color:#94A3B8;">${index + 1}</td>
+          <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;width:110px;font-weight:600;color:#0F172A;">
+            ${escapeHtml(order.customerName)}
+          </td>
+          <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;color:#334155;">
+            ${escapeHtml(meal)} · ${escapeHtml(drink)}
+            ${order.note ? `<span style="color:#94A3B8;">（${escapeHtml(order.note)}）</span>` : ''}
+          </td>
+          <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;width:90px;text-align:right;color:#334155;">
+            ${formatCurrency(order.total)}
+          </td>
+        </tr>`;
+    })
+    .join('');
+
+/** 組出一張排版乾淨的單據，專供列印/匯出使用，不受畫面上的互動元素影響。 */
+function buildDocumentNode({ orders, tally, title }) {
+  const node = document.createElement('div');
+  const printedAt = new Intl.DateTimeFormat('zh-TW', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date());
+
+  Object.assign(node.style, {
+    position: 'fixed',
+    top: '0',
+    left: '-10000px',
+    width: `${PAGE.widthPx}px`,
+    padding: `${PAGE.paddingPx}px`,
+    boxSizing: 'border-box',
+    background: '#FFFFFF',
+    color: '#0F172A',
+    font: `14px/1.6 ${FONT_STACK}`,
+  });
+
+  node.innerHTML = `
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding-bottom:18px;border-bottom:2px solid #0F172A;">
+      <div>
+        <div style="font-size:22px;font-weight:700;letter-spacing:-0.3px;">${escapeHtml(title)}</div>
+        <div style="margin-top:6px;font-size:12px;color:#94A3B8;">${escapeHtml(printedAt)} 匯出</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:12px;color:#94A3B8;">總計</div>
+        <div style="font-size:22px;font-weight:700;">${formatCurrency(tally.total)}</div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;padding:16px 18px;background:#F8FAFC;border-radius:12px;font-size:13px;color:#334155;line-height:1.9;">
+      <div><span style="color:#94A3B8;">人數　</span>${tally.people} 人（一人一份餐、一杯飲料）</div>
+      <div><span style="color:#94A3B8;">餐點　</span>${escapeHtml(
+        tally.meals
+          .filter((meal) => meal.count > 0)
+          .map((meal) => `${meal.name} ${meal.count}`)
+          .join('、') || '—'
+      )}</div>
+      <div><span style="color:#94A3B8;">飲料　</span>${escapeHtml(
+        tally.drinks
+          .filter((drink) => drink.count > 0)
+          .map((drink) => `${drink.name} ${drink.count}`)
+          .join('、') || '—'
+      )}</div>
+    </div>
+
+    <div style="margin-top:26px;font-size:13px;font-weight:700;">餐點</div>
+    <table style="width:100%;margin-top:6px;border-collapse:collapse;font-size:13px;">
+      <tbody>${tallyRows(tally.meals, '份')}</tbody>
+    </table>
+
+    <div style="margin-top:24px;font-size:13px;font-weight:700;">飲料</div>
+    <table style="width:100%;margin-top:6px;border-collapse:collapse;font-size:13px;">
+      <tbody>${tallyRows(tally.drinks, '杯')}</tbody>
+    </table>
+
+    <div style="margin-top:24px;font-size:13px;font-weight:700;">每個人點的</div>
+    <table style="width:100%;margin-top:6px;border-collapse:collapse;font-size:13px;">
+      <tbody>${personRows(orders)}</tbody>
+    </table>
+
+    <div style="margin-top:18px;display:flex;justify-content:space-between;font-size:13px;font-weight:700;">
+      <span>合計 ${orders.length} 份</span>
+      <span>${formatCurrency(tally.total)}</span>
+    </div>
+  `;
+
+  return node;
+}
+
+/**
+ * 將統整內容匯出成可下載的 PDF。
+ * 以自建的單據節點截圖，中文字型直接沿用系統字型，不需另外嵌入字型檔。
+ */
+export async function exportOrdersPdf({ orders, tally, title = '今天吃什麼 · 點餐統整' }) {
+  if (orders.length === 0) return null;
+
+  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+    import('html2canvas'),
+    import('jspdf'),
+  ]);
+
+  const node = buildDocumentNode({ orders, tally, title });
+  document.body.appendChild(node);
+
+  let canvas;
+  try {
+    canvas = await html2canvas(node, {
+      scale: 2,
+      backgroundColor: '#FFFFFF',
+      useCORS: true,
+      windowWidth: PAGE.widthPx,
+    });
+  } finally {
+    node.remove();
+  }
+
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+  const pxPerMm = canvas.width / PAGE.widthMm;
+  const pageHeightPx = Math.floor(PAGE.heightMm * pxPerMm);
+
+  let offset = 0;
+  let page = 0;
+
+  while (offset < canvas.height) {
+    const sliceHeight = Math.min(pageHeightPx, canvas.height - offset);
+
+    // 最後剩下不到一行的高度就不再多開一頁，避免出現空白頁。
+    if (page > 0 && sliceHeight < pageHeightPx * 0.03) break;
+    const slice = document.createElement('canvas');
+    slice.width = canvas.width;
+    slice.height = sliceHeight;
+
+    const context = slice.getContext('2d');
+    context.fillStyle = '#FFFFFF';
+    context.fillRect(0, 0, slice.width, slice.height);
+    context.drawImage(canvas, 0, offset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+
+    if (page > 0) pdf.addPage();
+    pdf.addImage(
+      slice.toDataURL('image/jpeg', 0.95),
+      'JPEG',
+      0,
+      0,
+      PAGE.widthMm,
+      sliceHeight / pxPerMm
+    );
+
+    offset += sliceHeight;
+    page += 1;
+  }
+
+  // 檔名使用 ASCII：部分瀏覽器／作業系統會丟棄含中文的下載檔名，連副檔名一起遺失。
+  const stamp = new Date().toISOString().slice(0, 10);
+  const filename = `order-summary-${stamp}.pdf`;
+
+  // 自行觸發下載，確保中文檔名被保留。
+  const url = URL.createObjectURL(pdf.output('blob'));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  return filename;
+}
