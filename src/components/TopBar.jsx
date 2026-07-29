@@ -3,7 +3,8 @@ import { UtensilsCrossed } from 'lucide-react';
 
 const TABS = [
   { id: 'order', label: '我要點' },
-  { id: 'summary', label: '大家點的' },
+  { id: 'people', label: '大家點的', showCount: true },
+  { id: 'stats', label: '統整' },
 ];
 
 const dayFormatter = new Intl.DateTimeFormat('zh-TW', {
@@ -15,7 +16,7 @@ const dayFormatter = new Intl.DateTimeFormat('zh-TW', {
 export default function TopBar({ page, onNavigate, count }) {
   return (
     <header className="sticky top-0 z-20 bg-canvas/70 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-5 py-4 sm:px-6">
+      <div className="mx-auto flex max-w-3xl flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6">
         <div className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-ink-900 text-white">
             <UtensilsCrossed className="h-[18px] w-[18px]" />
@@ -26,7 +27,7 @@ export default function TopBar({ page, onNavigate, count }) {
           </span>
         </div>
 
-        <nav className="flex items-center gap-1 rounded-full bg-white p-1 shadow-card ring-1 ring-slate-200/70">
+        <nav className="flex items-center gap-1 self-stretch rounded-full bg-white p-1 shadow-card ring-1 ring-slate-200/70 sm:self-auto">
           {TABS.map((tab) => {
             const active = page === tab.id;
             return (
@@ -34,7 +35,7 @@ export default function TopBar({ page, onNavigate, count }) {
                 key={tab.id}
                 type="button"
                 onClick={() => onNavigate(tab.id)}
-                className="relative rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-200"
+                className="relative flex-1 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors duration-200 sm:flex-none sm:px-3.5 sm:text-sm"
               >
                 {active && (
                   <motion.span
@@ -44,12 +45,12 @@ export default function TopBar({ page, onNavigate, count }) {
                   />
                 )}
                 <span
-                  className={`relative z-10 flex items-center gap-1.5 ${
+                  className={`relative z-10 flex items-center justify-center gap-1.5 whitespace-nowrap ${
                     active ? 'text-white' : 'text-ink-500 hover:text-ink-900'
                   }`}
                 >
                   {tab.label}
-                  {tab.id === 'summary' && count > 0 && (
+                  {tab.showCount && count > 0 && (
                     <span
                       className={`rounded-full px-1.5 text-[11px] tabular-nums ${
                         active ? 'bg-white/20 text-white' : 'bg-slate-100 text-ink-400'

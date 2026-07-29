@@ -3,7 +3,8 @@ import { AlertTriangle, CloudOff, Loader2 } from 'lucide-react';
 import TopBar from './components/TopBar.jsx';
 import Toast from './components/Toast.jsx';
 import OrderPage from './pages/OrderPage.jsx';
-import SummaryPage from './pages/SummaryPage.jsx';
+import PeoplePage from './pages/PeoplePage.jsx';
+import StatsPage from './pages/StatsPage.jsx';
 import { useOrders } from './hooks/useOrders.js';
 
 export default function App() {
@@ -108,15 +109,20 @@ export default function App() {
           </div>
         ) : page === 'order' ? (
           <OrderPage onSubmit={handleSubmitOrder} onNavigate={setPage} />
+        ) : page === 'people' ? (
+          <PeoplePage
+            orders={orders}
+            ownedIds={ownedIds}
+            onRemove={handleRemove}
+            onReset={handleReset}
+            onNavigate={setPage}
+          />
         ) : (
-          <SummaryPage
+          <StatsPage
             orders={orders}
             tally={tally}
             source={source}
             offline={offline}
-            ownedIds={ownedIds}
-            onRemove={handleRemove}
-            onReset={handleReset}
             onNavigate={setPage}
             onNotify={setToast}
           />

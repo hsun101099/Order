@@ -19,12 +19,15 @@
 
 **大家點的**
 
-- 最上面一行：幾個人、共幾份，一鍵「複製統計」可直接貼到群組
-- 統計：餐點與飲料各自列出每個品項幾份
-- 每個人點的：一人一列，顯示名字與他的兩份餐點、兩杯飲料
+- 一人一列，顯示名字與他的兩份餐點、兩杯飲料
 - **只能刪除自己點的**：這台裝置送出的那幾筆會標示「你」並顯示刪除鍵，別人的沒有
 - 「重來一輪」可以清空重新開始
-- 最下方可**下載 PDF**：一份排版乾淨的統整單據（總份數、餐點、飲料、每個人點的），檔名 `order-summary-YYYY-MM-DD.pdf`
+
+**統整**
+
+- 幾個人、共幾份，以及餐點與飲料各自的品項份數
+- 「複製統計」把文字版統計複製起來，可直接貼到群組
+- **下載 PDF**：A4 橫式單據（統計 + 每個人點的），檔名 `order-summary-YYYY-MM-DD.pdf`
 
 ## 執行方式
 
@@ -153,15 +156,17 @@ https://hsun101099.github.io/Order/
     ├── App.jsx                  # 頁面切換與共用狀態
     ├── index.css                # Tailwind 與共用 class
     ├── components
-    │   ├── TopBar.jsx           # 品牌、日期與「我要點 / 大家點的」切換
+    │   ├── TopBar.jsx           # 品牌、日期與三個分頁切換
     │   ├── StepIndicator.jsx    # 三步驟指示器
     │   ├── OptionCard.jsx       # 餐點 / 飲料選擇卡
     │   ├── TallyList.jsx        # 品項統計（每個品項幾份）
     │   ├── PersonList.jsx       # 每個人點了什麼
+    │   ├── EmptyState.jsx       # 尚無訂單時的共用畫面
     │   └── Toast.jsx            # 操作回饋提示
     ├── pages
     │   ├── OrderPage.jsx        # 點餐三步驟
-    │   └── SummaryPage.jsx      # 大家點的統整
+    │   ├── PeoplePage.jsx       # 大家點的（每個人一列）
+    │   └── StatsPage.jsx        # 統整（份數統計與匯出）
     ├── hooks
     │   └── useOrders.js         # 訂單資料訂閱與統整計算
     ├── lib

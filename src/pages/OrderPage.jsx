@@ -194,7 +194,7 @@ export default function OrderPage({ onSubmit, onNavigate }) {
       <DonePanel
         order={placedOrder}
         onReset={resetFlow}
-        onViewSummary={() => onNavigate('summary')}
+        onViewSummary={() => onNavigate('people')}
       />
     );
   }
