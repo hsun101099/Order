@@ -47,11 +47,11 @@ const localRepository = {
   subscribe(onChange) {
     const initial = readLocal() ?? createMockOrders();
     writeLocal(initial);
-    onChange(initial);
+    onChange(initial, { fromCache: false });
 
     // 同一台裝置開多個分頁時互相同步。
     const onStorage = (event) => {
-      if (event.key === STORAGE_KEY) onChange(readLocal() ?? []);
+      if (event.key === STORAGE_KEY) onChange(readLocal() ?? [], { fromCache: false });
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
@@ -81,12 +81,15 @@ const firebaseRepository = {
     const ordersQuery = query(collection(db, ORDERS_COLLECTION), orderBy('createdAt', 'asc'));
     return onSnapshot(
       ordersQuery,
+      // 監聽 metadata 才能分辨資料是來自伺服器還是離線快取。
+      { includeMetadataChanges: true },
       (snapshot) => {
         onChange(
           snapshot.docs.map((snap) => {
             const data = snap.data();
             return { ...data, id: snap.id, createdAt: toIso(data.createdAt) };
-          })
+          }),
+          { fromCache: snapshot.metadata.fromCache }
         );
       },
       onError

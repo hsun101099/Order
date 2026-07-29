@@ -12,11 +12,13 @@ export function useOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [offline, setOffline] = useState(false);
 
   useEffect(() => {
     const unsubscribe = ordersRepository.subscribe(
-      (next) => {
+      (next, meta = {}) => {
         setOrders(next);
+        setOffline(Boolean(meta.fromCache));
         setLoading(false);
       },
       (subscribeError) => {
@@ -66,6 +68,7 @@ export function useOrders() {
     tally,
     loading,
     error,
+    offline,
     source: ordersRepository.source,
     addOrder,
     removeOrder,

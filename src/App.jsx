@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { CloudOff, Loader2 } from 'lucide-react';
 import TopBar from './components/TopBar.jsx';
 import Toast from './components/Toast.jsx';
 import OrderPage from './pages/OrderPage.jsx';
@@ -7,7 +7,8 @@ import SummaryPage from './pages/SummaryPage.jsx';
 import { useOrders } from './hooks/useOrders.js';
 
 export default function App() {
-  const { orders, tally, loading, error, source, addOrder, removeOrder, resetOrders } = useOrders();
+  const { orders, tally, loading, error, offline, source, addOrder, removeOrder, resetOrders } =
+    useOrders();
   const [page, setPage] = useState('order');
   const [toast, setToast] = useState(null);
 
@@ -43,6 +44,18 @@ export default function App() {
           <p className="mb-5 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-danger ring-1 ring-inset ring-rose-100">
             資料讀取失敗，請確認 Firebase 設定與網路狀態。
           </p>
+        )}
+
+        {!error && offline && source === 'firebase' && (
+          <div className="mb-5 flex items-start gap-2.5 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700 ring-1 ring-inset ring-amber-100">
+            <CloudOff className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              尚未連上 Firestore，目前顯示的是本機快取，點的餐不會同步給其他人。
+              <span className="mt-0.5 block text-xs text-amber-600/80">
+                請確認 Firebase Console 已建立 Firestore 資料庫，以及目前的網路狀態。
+              </span>
+            </span>
+          </div>
         )}
 
         {loading ? (
