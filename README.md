@@ -108,6 +108,24 @@ firebase deploy --only firestore:rules
 https://hsun101099.github.io/Order/
 ```
 
+### 備援網址（不需要改任何設定）
+
+若 Pages 的 Source 仍停在「Deploy from a branch」，上面的網址會是空白頁。
+此時可改用版控中的 `site/` 資料夾，舊模式會直接把它發佈出去：
+
+```
+https://hsun101099.github.io/Order/site/
+```
+
+`site/` 是 `npm run build:site` 的產物（base 為 `/Order/site/`），內容與正式版完全相同，
+只是多了一層路徑。修改程式後要重新產生：
+
+```bash
+VITE_BASE=/Order/site/ npm run build:site
+```
+
+把 Source 改成 GitHub Actions 之後，這個資料夾就可以刪掉，改用上面的乾淨網址。
+
 之後每次推送都會自動更新，也可以到 Actions 分頁手動按 `Run workflow` 重跑。
 
 **相關設定**
