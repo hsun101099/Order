@@ -27,7 +27,7 @@
 
 - 幾個人、共幾份，以及餐點與飲料各自的品項份數
 - 「複製統計」把文字版統計複製起來，可直接貼到群組
-- **下載 PDF**：A4 橫式單據（統計 + 每個人點的），檔名 `order-summary-YYYY-MM-DD.pdf`
+- **下載 PDF**：A4 橫式兩頁（第一頁每個人點的、第二頁份數統計），檔名 `order-summary-YYYY-MM-DD.pdf`
 
 ## 執行方式
 
@@ -153,6 +153,7 @@ https://hsun101099.github.io/Order/
 ├── firestore.rules              # Firestore 安全規則
 └── src
     ├── main.jsx                 # React 進入點
+    ├── config.js                # 系統名稱（標頭與 PDF 共用）
     ├── App.jsx                  # 頁面切換與共用狀態
     ├── index.css                # Tailwind 與共用 class
     ├── components
@@ -187,7 +188,8 @@ https://hsun101099.github.io/Order/
 ## PDF 匯出
 
 - 點統整頁最下方的「下載 PDF」即可，PDF 相關套件是**點下去才載入**（動態 import），不影響首次開啟速度
-- 版面為 **A4 橫式**：左欄是品項統計，右欄是每個人點的，內容超過一頁會自動分頁
+- 版面為 **A4 橫式，固定兩頁**：第一頁是每個人點的（雙欄），第二頁是餐點與飲料的份數統計
+- 人數很多時第一頁會自動往後分頁，統計仍固定另起新頁
 - 中文直接使用系統字型（`html2canvas` → `jsPDF`），不需要另外嵌入字型檔
 - 檔名刻意使用英數（`order-summary-2026-07-29.pdf`）：部分瀏覽器與作業系統會丟棄含中文的下載檔名，連副檔名一起遺失
 
