@@ -7,7 +7,59 @@
     <title>點餐</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- React 掛載後會取代這段內容；若程式沒能啟動，畫面上會留下可讀的訊息而不是一片空白。 -->
+      <div
+        id="boot"
+        style="
+          font: 15px/1.7 -apple-system, BlinkMacSystemFont, 'PingFang TC', sans-serif;
+          color: #334155;
+          padding: 48px 24px;
+          text-align: center;
+        "
+      >
+        載入中…
+      </div>
+    </div>
+
+    <script>
+      // 手機上看不到開發者主控台，因此把啟動階段的錯誤直接顯示在頁面上。
+      (function () {
+        function show(title, detail) {
+          var el = document.getElementById('boot');
+          if (!el) return;
+          el.style.textAlign = 'left';
+          el.innerHTML =
+            '<p style="font-weight:600;color:#DC2626;margin:0 0 8px">' + title + '</p>' +
+            '<pre style="white-space:pre-wrap;word-break:break-all;font-size:12px;color:#475569;margin:0">' +
+            String(detail).replace(/[<>&]/g, function (c) {
+              return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c];
+            }) +
+            '</pre>';
+        }
+
+        window.addEventListener('error', function (event) {
+          if (event.target && event.target.tagName === 'SCRIPT') {
+            show('程式檔載入失敗', event.target.src || '(未知路徑)');
+            return;
+          }
+          show('發生錯誤', (event.message || '') + '\n' + (event.filename || '') + ':' + (event.lineno || ''));
+        }, true);
+
+        window.addEventListener('unhandledrejection', function (event) {
+          show('發生錯誤', (event.reason && (event.reason.stack || event.reason.message)) || event.reason);
+        });
+
+        // 10 秒後仍未掛載，代表 JS 沒有執行（多半是檔案路徑或快取問題）。
+        setTimeout(function () {
+          var el = document.getElementById('boot');
+          if (el && el.textContent.trim() === '載入中…') {
+            show('程式沒有啟動', '瀏覽器載入了頁面但沒有執行程式。\n請試著重新整理，或改用其他瀏覽器開啟。');
+          }
+        }, 10000);
+      })();
+    </script>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
