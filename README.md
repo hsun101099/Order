@@ -82,6 +82,41 @@ firebase deploy --only firestore:rules
 安全規則會檢查 `meals` 與 `drinks` 的長度必須剛好是 2，所以就算有人繞過介面直接寫入，
 份數不對的資料也會被拒絕。
 
+## 部署到 GitHub Pages
+
+已經設定好自動部署：**推送到這個分支，GitHub Actions 就會自動打包並上線**。
+
+第一次需要先開啟 Pages（只做一次）：
+
+1. GitHub repo → **Settings** → 左側 **Pages**
+2. **Source** 選 **GitHub Actions**（不是 Deploy from a branch）
+3. 回到 **Actions** 分頁，確認 `Deploy to GitHub Pages` 這個 workflow 跑完（約 1～2 分鐘）
+
+完成後網址是：
+
+```
+https://hsun101099.github.io/Order/
+```
+
+之後每次推送都會自動更新，也可以到 Actions 分頁手動按 `Run workflow` 重跑。
+
+**相關設定**
+
+- `vite.config.js` 的 `base` 會在打包時指向 `/<repo 名稱>/`；workflow 已自動帶入 repo 名稱，
+  改名 repo 不用改設定。若之後換成自訂網域或 `<帳號>.github.io`，把 `VITE_BASE` 設成 `/`
+- `.env.production` 有進版控，CI 打包時才有 Firebase 設定。
+  Firebase 的網頁設定一定會被打包進前端程式碼，任何人看網頁原始碼都拿得到，本來就不是機密；
+  真正決定誰能讀寫的是 `firestore.rules`
+
+### ⚠️ 上線前請注意權限
+
+網頁一旦公開，**知道網址的人都能點餐、也能刪掉別人的餐**（目前的規則是開放讀寫）。
+自己人小圈子用沒問題；如果網址可能外流，建議至少做其中一項：
+
+- 把 `firestore.rules` 的 `allow delete` 改成 `if false`（只能新增，不能刪）
+- 改成需要登入（`request.auth != null`）並開啟 Firebase Authentication
+- 開啟 [App Check](https://firebase.google.com/docs/app-check) 阻擋非本站來源的存取
+
 ## 資料夾架構
 
 ```

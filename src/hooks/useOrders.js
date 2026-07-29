@@ -14,18 +14,31 @@ export function useOrders() {
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
+    // 連不上 Firestore 時第一筆資料可能遲遲不來，
+    // 逾時後先讓使用者能操作（點的餐會排入佇列，恢復連線再送出）。
+    const timeout = setTimeout(() => {
+      setLoading(false);
+      setOffline(true);
+    }, 6000);
+
     const unsubscribe = ordersRepository.subscribe(
       (next, meta = {}) => {
+        clearTimeout(timeout);
         setOrders(next);
         setOffline(Boolean(meta.fromCache));
         setLoading(false);
       },
       (subscribeError) => {
+        clearTimeout(timeout);
         setError(subscribeError);
         setLoading(false);
       }
     );
-    return unsubscribe;
+
+    return () => {
+      clearTimeout(timeout);
+      unsubscribe();
+    };
   }, []);
 
   const addOrder = useCallback(async ({ customerName, meals, drinks, note }) => {

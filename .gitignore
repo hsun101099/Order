@@ -8,8 +8,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .env
-.env.*
+.env.local
+.env.*.local
 !.env.example
+# .env.production 需要進版控，GitHub Actions 打包時才有 Firebase 設定。
+# Firebase 的網頁設定本來就會包進前端程式碼，不是機密；
+# 真正的防護來自 firestore.rules。
 .idea
 .vscode/*
 !.vscode/extensions.json
