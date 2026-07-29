@@ -38,13 +38,6 @@ const tallyRows = (items, unit) =>
           <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;width:70px;color:#334155;">
             ${item.count} ${unit}
           </td>
-          <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;color:#64748B;line-height:1.7;">
-            ${escapeHtml(
-              item.people
-                .map((person) => `${person.name}${person.count > 1 ? ` ×${person.count}` : ''}`)
-                .join('、')
-            )}
-          </td>
         </tr>`
     )
     .join('');

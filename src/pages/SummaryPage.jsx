@@ -12,7 +12,7 @@ import {
   RotateCcw,
   Soup,
 } from 'lucide-react';
-import TallyCard from '../components/TallyCard.jsx';
+import TallyList from '../components/TallyList.jsx';
 import PersonList from '../components/PersonList.jsx';
 import { PORTIONS_PER_PERSON } from '../data/menu.js';
 import { exportOrdersPdf } from '../utils/exportPdf.js';
@@ -97,64 +97,28 @@ export default function SummaryPage({
   }
 
   return (
-    <div className="flex flex-col gap-10">
-      {/* 一句話看完 */}
-      <motion.section
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-        className="overflow-hidden rounded-[24px] bg-gradient-to-br from-ink-900 to-slate-700 px-7 py-8 text-white"
-      >
-        <p className="text-sm text-white/60">今天一起吃</p>
-        <p className="mt-2 text-3xl font-semibold tracking-tight">
-          {tally.people} 個人，共 {tally.portions} 份
+    <div className="flex flex-col gap-8">
+      {/* 一行帶過的總覽 */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+        <p className="text-sm text-ink-500">
+          <span className="text-base font-semibold text-ink-900">{tally.people}</span> 個人，共{' '}
+          <span className="text-base font-semibold text-ink-900">{tally.portions}</span> 份
         </p>
-        <p className="mt-3 text-sm leading-relaxed text-white/70">
-          {tally.meals
-            .filter((meal) => meal.count > 0)
-            .map((meal) => `${meal.name} ${meal.count}`)
-            .join('、')}
-          <span className="mx-2 text-white/30">|</span>
-          {tally.drinks
-            .filter((drink) => drink.count > 0)
-            .map((drink) => `${drink.name} ${drink.count}`)
-            .join('、')}
-        </p>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="focus-ring inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-medium text-ink-700 transition-colors duration-200 hover:bg-slate-50"
+        >
+          {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? '已複製' : '複製統計'}
+        </button>
+      </div>
 
-        <div className="mt-7 flex flex-wrap items-center justify-between gap-4">
-          <span className="text-sm text-white/60">一人 {PORTIONS_PER_PERSON} 份餐、{PORTIONS_PER_PERSON} 杯飲料</span>
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="focus-ring inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white ring-1 ring-inset ring-white/15 transition-colors duration-200 hover:bg-white/20"
-          >
-            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            {copied ? '已複製' : '複製訂單'}
-          </button>
-        </div>
-      </motion.section>
+      {/* 統計 */}
+      <TallyList title="餐點" items={tally.meals} unit="份" total={tally.portions} />
+      <TallyList title="飲料" items={tally.drinks} unit="杯" total={tally.portions} />
 
-      {/* 餐點統整 */}
-      <section>
-        <h2 className="px-1 text-sm font-semibold text-ink-900">餐點</h2>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {tally.meals.map((meal, index) => (
-            <TallyCard key={meal.id} item={meal} index={index} unit="份" />
-          ))}
-        </div>
-      </section>
-
-      {/* 飲料統整 */}
-      <section>
-        <h2 className="px-1 text-sm font-semibold text-ink-900">飲料</h2>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {tally.drinks.map((drink, index) => (
-            <TallyCard key={drink.id} item={drink} index={index} unit="杯" />
-          ))}
-        </div>
-      </section>
-
-      {/* 每個人 */}
+      {/* 每個人點了什麼 */}
       <section>
         <div className="flex items-center justify-between gap-3 px-1">
           <h2 className="text-sm font-semibold text-ink-900">每個人點的</h2>
@@ -168,7 +132,7 @@ export default function SummaryPage({
           </button>
         </div>
 
-        <div className="mt-3 rounded-[24px] border border-slate-200/70 bg-white px-5 py-1 shadow-card">
+        <div className="mt-3 rounded-[20px] border border-slate-200/70 bg-white px-5 py-1 shadow-card">
           <PersonList orders={orders} onRemove={onRemove} />
         </div>
       </section>
@@ -181,11 +145,7 @@ export default function SummaryPage({
           disabled={exporting}
           className="focus-ring inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-ink-700 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover disabled:cursor-wait disabled:text-ink-400"
         >
-          {exporting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4" />
-          )}
+          {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           {exporting ? '產生中…' : '下載 PDF'}
         </button>
 
@@ -203,7 +163,7 @@ export default function SummaryPage({
           ) : (
             <>
               <HardDrive className="h-3.5 w-3.5" />
-              目前存在這台瀏覽器，設定 Firebase 後會自動改為即時同步
+              目前存在這台瀏覽器，一人 {PORTIONS_PER_PERSON} 份
             </>
           )}
         </p>
