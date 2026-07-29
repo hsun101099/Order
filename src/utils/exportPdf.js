@@ -1,7 +1,7 @@
 import { PORTIONS_PER_PERSON, findDrink, findMeal } from '../data/menu.js';
 
-/** A4 直式，以 96dpi 換算的像素寬度，讓截圖比例與 PDF 一致。 */
-const PAGE = { widthMm: 210, heightMm: 297, widthPx: 794, paddingPx: 48 };
+/** A4 橫式，以 96dpi 換算的像素寬度，讓截圖比例與 PDF 一致。 */
+const PAGE = { widthMm: 297, heightMm: 210, widthPx: 1123, paddingPx: 44 };
 
 const escapeHtml = (value) =>
   String(value ?? '').replace(
@@ -86,40 +86,36 @@ function buildDocumentNode({ orders, tally, title }) {
   });
 
   node.innerHTML = `
-    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding-bottom:18px;border-bottom:2px solid #0F172A;">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding-bottom:14px;border-bottom:2px solid #0F172A;">
       <div>
         <div style="font-size:22px;font-weight:700;letter-spacing:-0.3px;">${escapeHtml(title)}</div>
         <div style="margin-top:6px;font-size:12px;color:#94A3B8;">${escapeHtml(printedAt)} 匯出</div>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:12px;color:#94A3B8;">總份數</div>
-        <div style="font-size:22px;font-weight:700;">${tally.portions} 份</div>
+        <div style="font-size:12px;color:#94A3B8;">${tally.people} 人（每人 ${PORTIONS_PER_PERSON} 份餐、${PORTIONS_PER_PERSON} 杯飲料）</div>
+        <div style="font-size:22px;font-weight:700;">共 ${tally.portions} 份</div>
       </div>
     </div>
 
-    <div style="margin-top:20px;padding:16px 18px;background:#F8FAFC;border-radius:12px;font-size:13px;color:#334155;line-height:1.9;">
-      <div><span style="color:#94A3B8;">人數　</span>${tally.people} 人（每人 ${PORTIONS_PER_PERSON} 份餐、${PORTIONS_PER_PERSON} 杯飲料）</div>
-      <div><span style="color:#94A3B8;">餐點　</span>${escapeHtml(summaryLine(tally.meals))}</div>
-      <div><span style="color:#94A3B8;">飲料　</span>${escapeHtml(summaryLine(tally.drinks))}</div>
-    </div>
+    <div style="display:flex;gap:32px;margin-top:22px;align-items:flex-start;">
+      <div style="width:300px;flex:0 0 300px;">
+        <div style="font-size:13px;font-weight:700;">餐點</div>
+        <table style="width:100%;margin-top:6px;border-collapse:collapse;font-size:13px;">
+          <tbody>${tallyRows(tally.meals, '份')}</tbody>
+        </table>
 
-    <div style="margin-top:26px;font-size:13px;font-weight:700;">餐點</div>
-    <table style="width:100%;margin-top:6px;border-collapse:collapse;font-size:13px;">
-      <tbody>${tallyRows(tally.meals, '份')}</tbody>
-    </table>
+        <div style="margin-top:22px;font-size:13px;font-weight:700;">飲料</div>
+        <table style="width:100%;margin-top:6px;border-collapse:collapse;font-size:13px;">
+          <tbody>${tallyRows(tally.drinks, '杯')}</tbody>
+        </table>
+      </div>
 
-    <div style="margin-top:24px;font-size:13px;font-weight:700;">飲料</div>
-    <table style="width:100%;margin-top:6px;border-collapse:collapse;font-size:13px;">
-      <tbody>${tallyRows(tally.drinks, '杯')}</tbody>
-    </table>
-
-    <div style="margin-top:24px;font-size:13px;font-weight:700;">每個人點的</div>
-    <table style="width:100%;margin-top:6px;border-collapse:collapse;font-size:13px;">
-      <tbody>${personRows(orders)}</tbody>
-    </table>
-
-    <div style="margin-top:18px;font-size:13px;font-weight:700;">
-      合計 ${orders.length} 人 · ${tally.portions} 份
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;">每個人點的</div>
+        <table style="width:100%;margin-top:6px;border-collapse:collapse;font-size:13px;">
+          <tbody>${personRows(orders)}</tbody>
+        </table>
+      </div>
     </div>
   `;
 
@@ -153,7 +149,7 @@ export async function exportOrdersPdf({ orders, tally, title = '點餐統整' })
     node.remove();
   }
 
-  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
   const pxPerMm = canvas.width / PAGE.widthMm;
   const pageHeightPx = Math.floor(PAGE.heightMm * pxPerMm);
 

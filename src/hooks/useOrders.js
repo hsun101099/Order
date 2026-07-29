@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DRINKS, MEALS, PORTIONS_PER_PERSON } from '../data/menu.js';
 import { ordersRepository } from '../lib/ordersRepository.js';
+import { clearOwned, forgetOwned, getOwnedIds, rememberOwned } from '../lib/ownership.js';
 
 /**
  * 這一輪大家點的餐。
@@ -13,6 +14,8 @@ export function useOrders() {
   const [error, setError] = useState(null);
   const [offline, setOffline] = useState(false);
   const [writeError, setWriteError] = useState(null);
+  // 這台裝置送出過的訂單，只有這些才會出現刪除鍵。
+  const [ownedIds, setOwnedIds] = useState(getOwnedIds);
 
   useEffect(() => {
     // 連不上 Firestore 時第一筆資料可能遲遲不來，
@@ -50,12 +53,26 @@ export function useOrders() {
       createdAt: new Date().toISOString(),
     };
     setWriteError(null);
-    return ordersRepository.add(order, setWriteError);
+    const saved = await ordersRepository.add(order, setWriteError);
+    setOwnedIds(rememberOwned(saved.id));
+    return saved;
   }, []);
 
-  const removeOrder = useCallback((id) => ordersRepository.remove(id), []);
+  /** 只允許刪除自己送出的那幾筆，避免誤刪別人的餐。 */
+  const removeOrder = useCallback(
+    async (id) => {
+      if (!getOwnedIds().has(id)) return false;
+      await ordersRepository.remove(id);
+      setOwnedIds(forgetOwned(id));
+      return true;
+    },
+    []
+  );
 
-  const resetOrders = useCallback(() => ordersRepository.reset(), []);
+  const resetOrders = useCallback(async () => {
+    await ordersRepository.reset();
+    setOwnedIds(clearOwned());
+  }, []);
 
   /**
    * 依品項分組：每個品項的總份數，以及誰點了幾份。
@@ -92,6 +109,7 @@ export function useOrders() {
     error,
     offline,
     writeError,
+    ownedIds,
     source: ordersRepository.source,
     addOrder,
     removeOrder,

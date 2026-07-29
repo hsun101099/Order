@@ -7,8 +7,19 @@ import SummaryPage from './pages/SummaryPage.jsx';
 import { useOrders } from './hooks/useOrders.js';
 
 export default function App() {
-  const { orders, tally, loading, error, offline, writeError, source, addOrder, removeOrder, resetOrders } =
-    useOrders();
+  const {
+    orders,
+    tally,
+    loading,
+    error,
+    offline,
+    writeError,
+    ownedIds,
+    source,
+    addOrder,
+    removeOrder,
+    resetOrders,
+  } = useOrders();
   const [page, setPage] = useState('order');
   const [toast, setToast] = useState(null);
 
@@ -38,8 +49,12 @@ export default function App() {
   const handleRemove = useCallback(
     async (id) => {
       const target = orders.find((order) => order.id === id);
-      await removeOrder(id);
-      setToast({ title: `已移除${target ? ` ${target.customerName} 的餐點` : ''}`, tone: 'info' });
+      const removed = await removeOrder(id);
+      setToast(
+        removed
+          ? { title: `已移除${target ? ` ${target.customerName} 的餐點` : ''}`, tone: 'info' }
+          : { title: '只能刪除自己點的餐', description: '這筆是別人送出的。', tone: 'info' }
+      );
     },
     [orders, removeOrder]
   );
@@ -99,6 +114,7 @@ export default function App() {
             tally={tally}
             source={source}
             offline={offline}
+            ownedIds={ownedIds}
             onRemove={handleRemove}
             onReset={handleReset}
             onNavigate={setPage}

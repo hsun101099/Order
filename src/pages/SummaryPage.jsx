@@ -62,6 +62,7 @@ export default function SummaryPage({
   tally,
   source,
   offline,
+  ownedIds,
   onRemove,
   onReset,
   onNavigate,
@@ -121,7 +122,10 @@ export default function SummaryPage({
       {/* 每個人點了什麼 */}
       <section>
         <div className="flex items-center justify-between gap-3 px-1">
-          <h2 className="text-sm font-semibold text-ink-900">每個人點的</h2>
+          <div>
+            <h2 className="text-sm font-semibold text-ink-900">每個人點的</h2>
+            <p className="mt-0.5 text-[11px] text-ink-400">標示「你」的才能刪除</p>
+          </div>
           <button
             type="button"
             onClick={onReset}
@@ -133,7 +137,7 @@ export default function SummaryPage({
         </div>
 
         <div className="mt-3 rounded-[20px] border border-slate-200/70 bg-white px-5 py-1 shadow-card">
-          <PersonList orders={orders} onRemove={onRemove} />
+          <PersonList orders={orders} ownedIds={ownedIds} onRemove={onRemove} />
         </div>
       </section>
 
