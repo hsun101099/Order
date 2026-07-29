@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { CloudOff, Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { AlertTriangle, CloudOff, Loader2 } from 'lucide-react';
 import TopBar from './components/TopBar.jsx';
 import Toast from './components/Toast.jsx';
 import OrderPage from './pages/OrderPage.jsx';
@@ -7,7 +7,7 @@ import SummaryPage from './pages/SummaryPage.jsx';
 import { useOrders } from './hooks/useOrders.js';
 
 export default function App() {
-  const { orders, tally, loading, error, offline, source, addOrder, removeOrder, resetOrders } =
+  const { orders, tally, loading, error, offline, writeError, source, addOrder, removeOrder, resetOrders } =
     useOrders();
   const [page, setPage] = useState('order');
   const [toast, setToast] = useState(null);
@@ -20,6 +20,20 @@ export default function App() {
     },
     [addOrder]
   );
+
+  // 背景寫入失敗（例如安全規則不符）時，那筆餐點會被 Firestore 回滾，
+  // 因此一定要主動告知，不能讓它安靜消失。
+  useEffect(() => {
+    if (!writeError) return;
+    setToast({
+      title: '餐點沒有送出去',
+      description:
+        writeError.code === 'permission-denied'
+          ? 'Firestore 安全規則拒絕了這筆資料，請確認規則已更新。'
+          : '請檢查網路後再試一次。',
+      tone: 'info',
+    });
+  }, [writeError]);
 
   const handleRemove = useCallback(
     async (id) => {
@@ -46,7 +60,21 @@ export default function App() {
           </p>
         )}
 
-        {!error && offline && source === 'firebase' && (
+        {writeError && (
+          <div className="mb-5 flex items-start gap-2.5 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-danger ring-1 ring-inset ring-rose-100">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              最後一筆餐點沒有成功送出，已經被系統退回。
+              <span className="mt-0.5 block text-xs text-danger/80">
+                {writeError.code === 'permission-denied'
+                  ? 'Firestore 安全規則拒絕了這筆資料（欄位或份數不符），請更新規則後重新點一次。'
+                  : `錯誤代碼：${writeError.code ?? '未知'}`}
+              </span>
+            </span>
+          </div>
+        )}
+
+        {!error && !writeError && offline && source === 'firebase' && (
           <div className="mb-5 flex items-start gap-2.5 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700 ring-1 ring-inset ring-amber-100">
             <CloudOff className="mt-0.5 h-4 w-4 shrink-0" />
             <span>

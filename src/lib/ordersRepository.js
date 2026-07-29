@@ -95,14 +95,16 @@ const firebaseRepository = {
       onError
     );
   },
-  async add(order) {
+  async add(order, onWriteError) {
     const { id, createdAt, ...payload } = order;
 
     // 文件 ID 由用戶端產生，因此不必等待伺服器回應就能立刻顯示結果；
     // Firestore 會在背景送出（離線時排入佇列，恢復連線後自動補寫）。
     const ref = doc(collection(db, ORDERS_COLLECTION));
-    setDoc(ref, { ...payload, createdAt: serverTimestamp() }).catch(() => {
-      /* 寫入失敗時畫面上方的離線提示會反映實際狀態。 */
+    setDoc(ref, { ...payload, createdAt: serverTimestamp() }).catch((error) => {
+      // 例如安全規則不符時，本地那筆暫存資料會被回滾，
+      // 畫面上必須明講，否則使用者只會看到餐點憑空消失。
+      onWriteError?.(error);
     });
 
     return { ...order, id: ref.id };

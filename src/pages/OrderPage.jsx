@@ -116,7 +116,6 @@ export default function OrderPage({ onSubmit, onNavigate }) {
   const [mealQuantities, setMealQuantities] = useState({});
   const [drinkQuantities, setDrinkQuantities] = useState({});
   const [customerName, setCustomerName] = useState('');
-  const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [placedOrder, setPlacedOrder] = useState(null);
@@ -169,9 +168,7 @@ export default function OrderPage({ onSubmit, onNavigate }) {
 
     setSubmitting(true);
     try {
-      setPlacedOrder(
-        await onSubmit({ customerName, meals: mealIds, drinks: drinkIds, note })
-      );
+      setPlacedOrder(await onSubmit({ customerName, meals: mealIds, drinks: drinkIds }));
     } catch {
       setError('送出失敗，請再試一次。');
     } finally {
@@ -185,7 +182,6 @@ export default function OrderPage({ onSubmit, onNavigate }) {
     setMealQuantities({});
     setDrinkQuantities({});
     setCustomerName('');
-    setNote('');
     setError('');
   };
 
@@ -222,7 +218,7 @@ export default function OrderPage({ onSubmit, onNavigate }) {
               <p className="mt-1.5 text-sm text-ink-400">
                 每個人固定 {PORTIONS_PER_PERSON} 份，同一款可以點兩份。
               </p>
-              <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="mt-6 grid grid-cols-2 gap-4">
                 {MEALS.map((meal, index) => (
                   <OptionCard
                     key={meal.id}
@@ -246,7 +242,7 @@ export default function OrderPage({ onSubmit, onNavigate }) {
               <p className="mt-1.5 text-sm text-ink-400">
                 兩份餐點各搭一杯，兩杯可以一樣。
               </p>
-              <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="mt-6 grid grid-cols-2 gap-4">
                 {DRINKS.map((drink, index) => (
                   <OptionCard
                     key={drink.id}
@@ -292,13 +288,6 @@ export default function OrderPage({ onSubmit, onNavigate }) {
                 </div>
                 {error && <p className="mt-2 px-2 text-xs text-danger">{error}</p>}
 
-                <textarea
-                  value={note}
-                  onChange={(event) => setNote(event.target.value)}
-                  rows={2}
-                  placeholder="想備註什麼？例如：不要洋蔥、飲料去冰（可略過）"
-                  className="mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-white p-4 text-sm text-ink-900 placeholder:text-ink-400 outline-none transition-all duration-200 focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
-                />
               </div>
             </div>
           )}

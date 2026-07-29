@@ -62,7 +62,6 @@ const personRows = (orders) =>
             ${escapeHtml(describe(order.meals, findMeal))}
             <span style="color:#CBD5E1;"> · </span>
             ${escapeHtml(describe(order.drinks, findDrink))}
-            ${order.note ? `<span style="color:#94A3B8;">（${escapeHtml(order.note)}）</span>` : ''}
           </td>
         </tr>`
     )

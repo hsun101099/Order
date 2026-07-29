@@ -34,7 +34,6 @@ export default function TallyCard({ item, index = 0, unit = '份' }) {
           <h3 className={`text-base font-semibold tracking-tight ${empty ? 'text-ink-400' : 'text-ink-900'}`}>
             {item.name}
           </h3>
-          <p className="text-xs text-ink-400">{item.subtitle}</p>
         </div>
 
         <span className="flex items-baseline gap-0.5">

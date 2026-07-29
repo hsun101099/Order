@@ -52,7 +52,6 @@ export default function PersonList({ orders, onRemove }) {
                 {describe(order.meals, findMeal)}
                 <span className="mx-1.5 text-ink-300">·</span>
                 {describe(order.drinks, findDrink)}
-                {order.note && <span className="text-ink-400">（{order.note}）</span>}
               </p>
             </div>
 

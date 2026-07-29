@@ -12,6 +12,7 @@ export function useOrders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [offline, setOffline] = useState(false);
+  const [writeError, setWriteError] = useState(null);
 
   useEffect(() => {
     // 連不上 Firestore 時第一筆資料可能遲遲不來，
@@ -41,15 +42,15 @@ export function useOrders() {
     };
   }, []);
 
-  const addOrder = useCallback(async ({ customerName, meals, drinks, note }) => {
+  const addOrder = useCallback(async ({ customerName, meals, drinks }) => {
     const order = {
       customerName: customerName.trim(),
       meals,
       drinks,
-      note: note?.trim() ?? '',
       createdAt: new Date().toISOString(),
     };
-    return ordersRepository.add(order);
+    setWriteError(null);
+    return ordersRepository.add(order, setWriteError);
   }, []);
 
   const removeOrder = useCallback((id) => ordersRepository.remove(id), []);
@@ -90,6 +91,7 @@ export function useOrders() {
     loading,
     error,
     offline,
+    writeError,
     source: ordersRepository.source,
     addOrder,
     removeOrder,
