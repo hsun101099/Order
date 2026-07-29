@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { calcTotal } from '../data/mockOrders.js';
-import { DRINKS, MEALS } from '../data/menu.js';
+import { DRINKS, MEALS, PORTIONS_PER_PERSON } from '../data/menu.js';
 import { ordersRepository } from '../lib/ordersRepository.js';
 
 /**
@@ -29,13 +28,12 @@ export function useOrders() {
     return unsubscribe;
   }, []);
 
-  const addOrder = useCallback(async ({ customerName, mealId, drinkId, note }) => {
+  const addOrder = useCallback(async ({ customerName, meals, drinks, note }) => {
     const order = {
       customerName: customerName.trim(),
-      mealId,
-      drinkId,
+      meals,
+      drinks,
       note: note?.trim() ?? '',
-      total: calcTotal(mealId, drinkId),
       createdAt: new Date().toISOString(),
     };
     return ordersRepository.add(order);
@@ -45,21 +43,31 @@ export function useOrders() {
 
   const resetOrders = useCallback(() => ordersRepository.reset(), []);
 
-  /** 依餐點、飲料分組，並算出總份數與金額。 */
+  /**
+   * 依品項分組：每個品項的總份數，以及誰點了幾份。
+   * 同一個人點兩份同款時會記成 count 2，不會出現重複的名字。
+   */
   const tally = useMemo(() => {
     const group = (items, key) =>
       items.map((item) => {
-        const people = orders
-          .filter((order) => order[key] === item.id)
-          .map((order) => order.customerName);
-        return { ...item, people, count: people.length };
+        const people = [];
+        let count = 0;
+
+        orders.forEach((order) => {
+          const picked = (order[key] ?? []).filter((id) => id === item.id).length;
+          if (picked === 0) return;
+          count += picked;
+          people.push({ name: order.customerName, count: picked });
+        });
+
+        return { ...item, people, count };
       });
 
     return {
-      meals: group(MEALS, 'mealId'),
-      drinks: group(DRINKS, 'drinkId'),
+      meals: group(MEALS, 'meals'),
+      drinks: group(DRINKS, 'drinks'),
       people: orders.length,
-      total: orders.reduce((sum, order) => sum + order.total, 0),
+      portions: orders.length * PORTIONS_PER_PERSON,
     };
   }, [orders]);
 

@@ -3,8 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Check, Loader2, PartyPopper, User } from 'lucide-react';
 import StepIndicator from '../components/StepIndicator.jsx';
 import OptionCard from '../components/OptionCard.jsx';
-import { DRINKS, MEALS, findDrink, findMeal } from '../data/menu.js';
-import { formatCurrency } from '../utils/format.js';
+import { DRINKS, MEALS, PORTIONS_PER_PERSON, findDrink, findMeal } from '../data/menu.js';
 
 const STEPS = [
   { id: 'meal', label: '選餐點' },
@@ -14,13 +13,22 @@ const STEPS = [
 
 const transition = { duration: 0.3, ease: [0.22, 1, 0.36, 1] };
 
-/** 底部一直看得到的選擇摘要，取代側邊的訂單明細表。 */
-function ChoiceBar({ mealId, drinkId }) {
-  const meal = findMeal(mealId);
-  const drink = findDrink(drinkId);
-  const total = (meal?.price ?? 0) + (drink?.price ?? 0);
+const countOf = (quantities) => Object.values(quantities).reduce((sum, value) => sum + value, 0);
 
-  if (!meal && !drink) return null;
+/** { 'cheese-beef': 2 } → ['cheese-beef', 'cheese-beef'] */
+const toList = (quantities) =>
+  Object.entries(quantities).flatMap(([id, quantity]) => Array.from({ length: quantity }, () => id));
+
+const describe = (ids, finder) => {
+  const counted = ids.reduce((acc, id) => ({ ...acc, [id]: (acc[id] ?? 0) + 1 }), {});
+  return Object.entries(counted)
+    .map(([id, quantity]) => `${finder(id)?.name ?? id}${quantity > 1 ? ` ×${quantity}` : ''}`)
+    .join('、');
+};
+
+/** 底部一直看得到的選擇摘要。 */
+function ChoiceBar({ mealIds, drinkIds }) {
+  if (mealIds.length === 0 && drinkIds.length === 0) return null;
 
   return (
     <motion.div
@@ -30,19 +38,34 @@ function ChoiceBar({ mealId, drinkId }) {
       className="flex items-center justify-between gap-3 rounded-full bg-white px-5 py-3 shadow-card ring-1 ring-slate-200/70"
     >
       <span className="truncate text-sm text-ink-500">
-        {[meal?.name, drink?.name].filter(Boolean).join(' · ')}
-      </span>
-      <span className="shrink-0 text-sm font-semibold tabular-nums text-ink-900">
-        {formatCurrency(total)}
+        {[
+          mealIds.length ? describe(mealIds, findMeal) : null,
+          drinkIds.length ? describe(drinkIds, findDrink) : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
       </span>
     </motion.div>
   );
 }
 
-function DonePanel({ order, onReset, onViewSummary }) {
-  const meal = findMeal(order.mealId);
-  const drink = findDrink(order.drinkId);
+/** 目前選了幾份 / 還差幾份。 */
+function PortionCounter({ selected }) {
+  const full = selected === PORTIONS_PER_PERSON;
 
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors duration-200 ${
+        full ? 'bg-emerald-50 text-success' : 'bg-slate-100 text-ink-500'
+      }`}
+    >
+      {full && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+      已選 {selected} / {PORTIONS_PER_PERSON} 份
+    </span>
+  );
+}
+
+function DonePanel({ order, onReset, onViewSummary }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -62,8 +85,10 @@ function DonePanel({ order, onReset, onViewSummary }) {
       <h2 className="mt-5 text-xl font-semibold tracking-tight text-ink-900">
         {order.customerName}，記好了！
       </h2>
-      <p className="mt-2 text-sm text-ink-500">
-        {meal?.name} 配 {drink?.name} · {formatCurrency(order.total)}
+      <p className="mt-2 text-sm leading-relaxed text-ink-500">
+        {describe(order.meals, findMeal)}
+        <br />
+        {describe(order.drinks, findDrink)}
       </p>
 
       <div className="mt-7 flex flex-col gap-2.5 sm:flex-row">
@@ -88,24 +113,48 @@ function DonePanel({ order, onReset, onViewSummary }) {
 
 export default function OrderPage({ onSubmit, onNavigate }) {
   const [step, setStep] = useState(0);
-  const [mealId, setMealId] = useState(null);
-  const [drinkId, setDrinkId] = useState(null);
+  const [mealQuantities, setMealQuantities] = useState({});
+  const [drinkQuantities, setDrinkQuantities] = useState({});
   const [customerName, setCustomerName] = useState('');
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [placedOrder, setPlacedOrder] = useState(null);
 
-  const canContinue = useMemo(() => {
-    if (step === 0) return Boolean(mealId);
-    if (step === 1) return Boolean(drinkId);
-    return customerName.trim().length > 0;
-  }, [step, mealId, drinkId, customerName]);
+  const mealCount = countOf(mealQuantities);
+  const drinkCount = countOf(drinkQuantities);
+  const mealIds = useMemo(() => toList(mealQuantities), [mealQuantities]);
+  const drinkIds = useMemo(() => toList(drinkQuantities), [drinkQuantities]);
 
-  /** 選好之後自動往下一步，少按一次按鈕。 */
-  const selectAndAdvance = (setter) => (id) => {
-    setter(id);
-    setTimeout(() => setStep((prev) => Math.min(STEPS.length - 1, prev + 1)), 260);
+  const canContinue = useMemo(() => {
+    if (step === 0) return mealCount === PORTIONS_PER_PERSON;
+    if (step === 1) return drinkCount === PORTIONS_PER_PERSON;
+    return customerName.trim().length > 0;
+  }, [step, mealCount, drinkCount, customerName]);
+
+  /**
+   * 份數更新；超過上限的操作會被忽略，選滿之後自動前往下一步。
+   * 計算與排程都放在事件處理器裡，避免在 state updater 內產生副作用。
+   */
+  const updateQuantity = (quantities, setter, stepIndex) => (id, quantity) => {
+    if (quantity < 0) return;
+
+    const next = { ...quantities };
+    if (quantity === 0) delete next[id];
+    else next[id] = quantity;
+
+    const total = countOf(next);
+    if (total > PORTIONS_PER_PERSON) return;
+
+    setter(next);
+
+    if (total === PORTIONS_PER_PERSON) {
+      // 只有在使用者仍停留在這一步時才前進，避免手動返回後又被推走。
+      setTimeout(
+        () => setStep((current) => (current === stepIndex ? current + 1 : current)),
+        320
+      );
+    }
   };
 
   const handleNext = async () => {
@@ -120,7 +169,9 @@ export default function OrderPage({ onSubmit, onNavigate }) {
 
     setSubmitting(true);
     try {
-      setPlacedOrder(await onSubmit({ customerName, mealId, drinkId, note }));
+      setPlacedOrder(
+        await onSubmit({ customerName, meals: mealIds, drinks: drinkIds, note })
+      );
     } catch {
       setError('送出失敗，請再試一次。');
     } finally {
@@ -131,8 +182,8 @@ export default function OrderPage({ onSubmit, onNavigate }) {
   const resetFlow = () => {
     setPlacedOrder(null);
     setStep(0);
-    setMealId(null);
-    setDrinkId(null);
+    setMealQuantities({});
+    setDrinkQuantities({});
     setCustomerName('');
     setNote('');
     setError('');
@@ -162,16 +213,24 @@ export default function OrderPage({ onSubmit, onNavigate }) {
         >
           {step === 0 && (
             <div>
-              <h2 className="text-2xl font-semibold tracking-tight text-ink-900">今天想吃哪一個？</h2>
-              <p className="mt-1.5 text-sm text-ink-400">四款主餐，一人一份。</p>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-2xl font-semibold tracking-tight text-ink-900">
+                  今天想吃哪兩份？
+                </h2>
+                <PortionCounter selected={mealCount} />
+              </div>
+              <p className="mt-1.5 text-sm text-ink-400">
+                每個人固定 {PORTIONS_PER_PERSON} 份，同一款可以點兩份。
+              </p>
               <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {MEALS.map((meal, index) => (
                   <OptionCard
                     key={meal.id}
                     option={meal}
                     index={index}
-                    selected={mealId === meal.id}
-                    onSelect={selectAndAdvance(setMealId)}
+                    quantity={mealQuantities[meal.id] ?? 0}
+                    canAdd={mealCount < PORTIONS_PER_PERSON}
+                    onChange={updateQuantity(mealQuantities, setMealQuantities, 0)}
                   />
                 ))}
               </div>
@@ -180,16 +239,22 @@ export default function OrderPage({ onSubmit, onNavigate }) {
 
           {step === 1 && (
             <div>
-              <h2 className="text-2xl font-semibold tracking-tight text-ink-900">配什麼喝的？</h2>
-              <p className="mt-1.5 text-sm text-ink-400">每份餐點搭一杯。</p>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-2xl font-semibold tracking-tight text-ink-900">配哪兩杯？</h2>
+                <PortionCounter selected={drinkCount} />
+              </div>
+              <p className="mt-1.5 text-sm text-ink-400">
+                兩份餐點各搭一杯，兩杯可以一樣。
+              </p>
               <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {DRINKS.map((drink, index) => (
                   <OptionCard
                     key={drink.id}
                     option={drink}
                     index={index}
-                    selected={drinkId === drink.id}
-                    onSelect={selectAndAdvance(setDrinkId)}
+                    quantity={drinkQuantities[drink.id] ?? 0}
+                    canAdd={drinkCount < PORTIONS_PER_PERSON}
+                    onChange={updateQuantity(drinkQuantities, setDrinkQuantities, 1)}
                   />
                 ))}
               </div>
@@ -240,7 +305,7 @@ export default function OrderPage({ onSubmit, onNavigate }) {
         </motion.section>
       </AnimatePresence>
 
-      <ChoiceBar mealId={mealId} drinkId={drinkId} />
+      <ChoiceBar mealIds={mealIds} drinkIds={drinkIds} />
 
       <div className="flex items-center justify-between gap-3">
         <button

@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import TallyCard from '../components/TallyCard.jsx';
 import PersonList from '../components/PersonList.jsx';
-import { formatCurrency } from '../utils/format.js';
+import { PORTIONS_PER_PERSON } from '../data/menu.js';
 import { exportOrdersPdf } from '../utils/exportPdf.js';
 
 /** 產出可直接貼到群組的文字版統整。 */
@@ -26,10 +26,9 @@ const buildShareText = (tally) => {
       .join('、');
 
   return [
-    `今天總共 ${tally.people} 份`,
+    `今天 ${tally.people} 個人，共 ${tally.portions} 份`,
     `餐點：${line(tally.meals, '份') || '尚未有人點餐'}`,
     `飲料：${line(tally.drinks, '杯') || '尚未有人點飲料'}`,
-    `合計 ${formatCurrency(tally.total)}`,
   ].join('\n');
 };
 
@@ -107,7 +106,9 @@ export default function SummaryPage({
         className="overflow-hidden rounded-[24px] bg-gradient-to-br from-ink-900 to-slate-700 px-7 py-8 text-white"
       >
         <p className="text-sm text-white/60">今天一起吃</p>
-        <p className="mt-2 text-3xl font-semibold tracking-tight">{tally.people} 個人，一人一份</p>
+        <p className="mt-2 text-3xl font-semibold tracking-tight">
+          {tally.people} 個人，共 {tally.portions} 份
+        </p>
         <p className="mt-3 text-sm leading-relaxed text-white/70">
           {tally.meals
             .filter((meal) => meal.count > 0)
@@ -121,7 +122,7 @@ export default function SummaryPage({
         </p>
 
         <div className="mt-7 flex flex-wrap items-center justify-between gap-4">
-          <span className="text-2xl font-semibold tabular-nums">{formatCurrency(tally.total)}</span>
+          <span className="text-sm text-white/60">一人 {PORTIONS_PER_PERSON} 份餐、{PORTIONS_PER_PERSON} 杯飲料</span>
           <button
             type="button"
             onClick={handleCopy}

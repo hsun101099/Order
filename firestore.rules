@@ -7,17 +7,19 @@ service cloud.firestore {
     match /orders/{orderId} {
       allow read: if true;
 
+      // 每個人固定兩份餐點、兩杯飲料，數量在規則層一併把關。
       allow create: if request.resource.data.keys().hasOnly(
-                      ['customerName', 'mealId', 'drinkId', 'note', 'total', 'createdAt']
+                      ['customerName', 'meals', 'drinks', 'note', 'createdAt']
                     )
                     && request.resource.data.customerName is string
                     && request.resource.data.customerName.size() > 0
                     && request.resource.data.customerName.size() <= 20
-                    && request.resource.data.mealId is string
-                    && request.resource.data.drinkId is string
-                    && request.resource.data.note.size() <= 100
-                    && request.resource.data.total is number
-                    && request.resource.data.total >= 0;
+                    && request.resource.data.meals is list
+                    && request.resource.data.meals.size() == 2
+                    && request.resource.data.drinks is list
+                    && request.resource.data.drinks.size() == 2
+                    && request.resource.data.note is string
+                    && request.resource.data.note.size() <= 100;
 
       allow delete: if true;
       allow update: if false;

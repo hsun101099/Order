@@ -2,15 +2,16 @@ import { Beef, Croissant, Drumstick, Flame, CupSoda, Leaf } from 'lucide-react';
 
 /**
  * 餐點清單。
- * 每一份訂單 = 一份主餐 + 一杯飲料，因此餐點與飲料皆為單選。
+ * 每個人固定點兩份：兩份主餐 + 兩杯飲料（可以重複選同一款）。
  */
+export const PORTIONS_PER_PERSON = 2;
+
 export const MEALS = [
   {
     id: 'cheese-beef',
     name: '起司牛',
     subtitle: 'Cheese Beef',
     description: '慢燉牛肉搭配雙倍融化起司，鹹香濃郁的經典款。',
-    price: 120,
     tag: '人氣第一',
     tone: 'brand',
     icon: Beef,
@@ -20,7 +21,6 @@ export const MEALS = [
     name: '花生牛',
     subtitle: 'Peanut Beef',
     description: '手炒花生醬與嫩煎牛肉，帶著堅果甜香的層次口感。',
-    price: 120,
     tag: '香濃推薦',
     tone: 'amber',
     icon: Croissant,
@@ -30,7 +30,6 @@ export const MEALS = [
     name: 'BBQ 豬',
     subtitle: 'BBQ Pork',
     description: '煙燻炭烤豬肉刷上特調 BBQ 醬，微甜帶著焦香。',
-    price: 110,
     tag: '炭烤風味',
     tone: 'rose',
     icon: Flame,
@@ -40,7 +39,6 @@ export const MEALS = [
     name: '酸辣雞腿',
     subtitle: 'Hot & Sour Chicken',
     description: '去骨雞腿排佐酸辣醬汁，開胃且不膩口的清爽選擇。',
-    price: 130,
     tag: '微辣',
     tone: 'emerald',
     icon: Drumstick,
@@ -53,7 +51,6 @@ export const DRINKS = [
     name: '汽水',
     subtitle: 'Soda',
     description: '冰鎮氣泡，解膩首選。',
-    price: 30,
     tone: 'brand',
     icon: CupSoda,
   },
@@ -62,7 +59,6 @@ export const DRINKS = [
     name: '無糖茶',
     subtitle: 'Unsweetened Tea',
     description: '冷泡青茶，零糖分無負擔。',
-    price: 30,
     tone: 'emerald',
     icon: Leaf,
   },

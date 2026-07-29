@@ -1,5 +1,4 @@
-import { findDrink, findMeal } from '../data/menu.js';
-import { formatCurrency } from './format.js';
+import { PORTIONS_PER_PERSON, findDrink, findMeal } from '../data/menu.js';
 
 /** A4 直式，以 96dpi 換算的像素寬度，讓截圖比例與 PDF 一致。 */
 const PAGE = { widthMm: 210, heightMm: 297, widthPx: 794, paddingPx: 48 };
@@ -12,6 +11,20 @@ const escapeHtml = (value) =>
 
 const FONT_STACK =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+
+/** ['soda','soda'] → '汽水 ×2' */
+const describe = (ids = [], finder) => {
+  const counted = ids.reduce((acc, id) => ({ ...acc, [id]: (acc[id] ?? 0) + 1 }), {});
+  return Object.entries(counted)
+    .map(([id, quantity]) => `${finder(id)?.name ?? id}${quantity > 1 ? ` ×${quantity}` : ''}`)
+    .join('、');
+};
+
+const summaryLine = (items) =>
+  items
+    .filter((item) => item.count > 0)
+    .map((item) => `${item.name} ${item.count}`)
+    .join('、') || '—';
 
 const tallyRows = (items, unit) =>
   items
@@ -26,7 +39,11 @@ const tallyRows = (items, unit) =>
             ${item.count} ${unit}
           </td>
           <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;color:#64748B;line-height:1.7;">
-            ${escapeHtml(item.people.join('、'))}
+            ${escapeHtml(
+              item.people
+                .map((person) => `${person.name}${person.count > 1 ? ` ×${person.count}` : ''}`)
+                .join('、')
+            )}
           </td>
         </tr>`
     )
@@ -34,24 +51,21 @@ const tallyRows = (items, unit) =>
 
 const personRows = (orders) =>
   orders
-    .map((order, index) => {
-      const meal = findMeal(order.mealId)?.name ?? '—';
-      const drink = findDrink(order.drinkId)?.name ?? '—';
-      return `
+    .map(
+      (order, index) => `
         <tr>
           <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;width:36px;color:#94A3B8;">${index + 1}</td>
           <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;width:110px;font-weight:600;color:#0F172A;">
             ${escapeHtml(order.customerName)}
           </td>
           <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;color:#334155;">
-            ${escapeHtml(meal)} · ${escapeHtml(drink)}
+            ${escapeHtml(describe(order.meals, findMeal))}
+            <span style="color:#CBD5E1;"> · </span>
+            ${escapeHtml(describe(order.drinks, findDrink))}
             ${order.note ? `<span style="color:#94A3B8;">（${escapeHtml(order.note)}）</span>` : ''}
           </td>
-          <td style="padding:10px 0;border-bottom:1px solid #F1F5F9;width:90px;text-align:right;color:#334155;">
-            ${formatCurrency(order.total)}
-          </td>
-        </tr>`;
-    })
+        </tr>`
+    )
     .join('');
 
 /** 組出一張排版乾淨的單據，專供列印/匯出使用，不受畫面上的互動元素影響。 */
@@ -86,25 +100,15 @@ function buildDocumentNode({ orders, tally, title }) {
         <div style="margin-top:6px;font-size:12px;color:#94A3B8;">${escapeHtml(printedAt)} 匯出</div>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:12px;color:#94A3B8;">總計</div>
-        <div style="font-size:22px;font-weight:700;">${formatCurrency(tally.total)}</div>
+        <div style="font-size:12px;color:#94A3B8;">總份數</div>
+        <div style="font-size:22px;font-weight:700;">${tally.portions} 份</div>
       </div>
     </div>
 
     <div style="margin-top:20px;padding:16px 18px;background:#F8FAFC;border-radius:12px;font-size:13px;color:#334155;line-height:1.9;">
-      <div><span style="color:#94A3B8;">人數　</span>${tally.people} 人（一人一份餐、一杯飲料）</div>
-      <div><span style="color:#94A3B8;">餐點　</span>${escapeHtml(
-        tally.meals
-          .filter((meal) => meal.count > 0)
-          .map((meal) => `${meal.name} ${meal.count}`)
-          .join('、') || '—'
-      )}</div>
-      <div><span style="color:#94A3B8;">飲料　</span>${escapeHtml(
-        tally.drinks
-          .filter((drink) => drink.count > 0)
-          .map((drink) => `${drink.name} ${drink.count}`)
-          .join('、') || '—'
-      )}</div>
+      <div><span style="color:#94A3B8;">人數　</span>${tally.people} 人（每人 ${PORTIONS_PER_PERSON} 份餐、${PORTIONS_PER_PERSON} 杯飲料）</div>
+      <div><span style="color:#94A3B8;">餐點　</span>${escapeHtml(summaryLine(tally.meals))}</div>
+      <div><span style="color:#94A3B8;">飲料　</span>${escapeHtml(summaryLine(tally.drinks))}</div>
     </div>
 
     <div style="margin-top:26px;font-size:13px;font-weight:700;">餐點</div>
@@ -122,9 +126,8 @@ function buildDocumentNode({ orders, tally, title }) {
       <tbody>${personRows(orders)}</tbody>
     </table>
 
-    <div style="margin-top:18px;display:flex;justify-content:space-between;font-size:13px;font-weight:700;">
-      <span>合計 ${orders.length} 份</span>
-      <span>${formatCurrency(tally.total)}</span>
+    <div style="margin-top:18px;font-size:13px;font-weight:700;">
+      合計 ${orders.length} 人 · ${tally.portions} 份
     </div>
   `;
 
@@ -135,7 +138,7 @@ function buildDocumentNode({ orders, tally, title }) {
  * 將統整內容匯出成可下載的 PDF。
  * 以自建的單據節點截圖，中文字型直接沿用系統字型，不需另外嵌入字型檔。
  */
-export async function exportOrdersPdf({ orders, tally, title = '今天吃什麼 · 點餐統整' }) {
+export async function exportOrdersPdf({ orders, tally, title = '點餐統整' }) {
   if (orders.length === 0) return null;
 
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
@@ -170,6 +173,7 @@ export async function exportOrdersPdf({ orders, tally, title = '今天吃什麼 
 
     // 最後剩下不到一行的高度就不再多開一頁，避免出現空白頁。
     if (page > 0 && sliceHeight < pageHeightPx * 0.03) break;
+
     const slice = document.createElement('canvas');
     slice.width = canvas.width;
     slice.height = sliceHeight;
@@ -197,7 +201,7 @@ export async function exportOrdersPdf({ orders, tally, title = '今天吃什麼 
   const stamp = new Date().toISOString().slice(0, 10);
   const filename = `order-summary-${stamp}.pdf`;
 
-  // 自行觸發下載，確保中文檔名被保留。
+  // 自行觸發下載，確保檔名被保留。
   const url = URL.createObjectURL(pdf.output('blob'));
   const link = document.createElement('a');
   link.href = url;

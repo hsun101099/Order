@@ -13,7 +13,7 @@ import {
 import { db, isFirebaseConfigured, ORDERS_COLLECTION } from './firebase.js';
 import { createMockOrders } from '../data/mockOrders.js';
 
-const STORAGE_KEY = 'order-system.orders.v2';
+const STORAGE_KEY = 'order-system.orders.v3';
 
 /** Firestore Timestamp / 字串 / 空值都轉成 ISO 字串。 */
 const toIso = (value) => {

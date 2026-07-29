@@ -17,8 +17,6 @@ export const formatDateTime = (iso) => dateFormatter.format(new Date(iso));
 
 export const formatToday = (date = new Date()) => fullDateFormatter.format(date);
 
-export const formatCurrency = (amount) => `NT$ ${Number(amount).toLocaleString('zh-TW')}`;
-
 /** 「3 分鐘前 / 2 小時前 / 昨天」等相對時間，用於列表與 Drawer。 */
 export const formatRelative = (iso, now = Date.now()) => {
   const diffMinutes = Math.max(0, Math.round((now - new Date(iso).getTime()) / 60000));

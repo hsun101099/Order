@@ -53,13 +53,14 @@ export default function TallyCard({ item, index = 0, unit = '份' }) {
         <ul className="mt-4 flex flex-wrap gap-1.5">
           {item.people.map((person, personIndex) => (
             <motion.li
-              key={`${person}-${personIndex}`}
+              key={`${person.name}-${personIndex}`}
               initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.28, delay: index * 0.07 + personIndex * 0.03 }}
               className="rounded-full bg-slate-50 px-2.5 py-1 text-xs text-ink-700 ring-1 ring-inset ring-slate-200/70"
             >
-              {person}
+              {person.name}
+              {person.count > 1 && <span className="ml-1 text-ink-400">×{person.count}</span>}
             </motion.li>
           ))}
         </ul>
