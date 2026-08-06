@@ -1,135 +1,154 @@
-import { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, CloudOff, Loader2 } from 'lucide-react';
-import TopBar from './components/TopBar.jsx';
-import Toast from './components/Toast.jsx';
-import OrderPage from './pages/OrderPage.jsx';
-import PeoplePage from './pages/PeoplePage.jsx';
-import StatsPage from './pages/StatsPage.jsx';
-import { useOrders } from './hooks/useOrders.js';
+import { useMemo, useState } from 'react';
+import { CupSoda, SlidersHorizontal } from 'lucide-react';
+import FilterBar from './components/FilterBar.jsx';
+import ShopCard from './components/ShopCard.jsx';
+import ShopDetail from './components/ShopDetail.jsx';
+import ShortlistBar from './components/ShortlistBar.jsx';
+import { PRICE_BANDS, SHOPS } from './data/shops.js';
+import { useShortlist } from './hooks/useShortlist.js';
+
+const DEFAULT_FILTERS = {
+  keyword: '',
+  category: 'all',
+  area: 'all',
+  price: 'all',
+  tags: [],
+};
+
+const SORTS = [
+  { id: 'default', label: '推薦排序' },
+  { id: 'priceAsc', label: '價位由低到高' },
+  { id: 'priceDesc', label: '價位由高到低' },
+  { id: 'name', label: '依店名' },
+];
+
+function matches(shop, filters) {
+  if (filters.category !== 'all' && shop.category !== filters.category) return false;
+  if (filters.area !== 'all' && !shop.areas.includes(filters.area)) return false;
+
+  const band = PRICE_BANDS.find((item) => item.id === filters.price);
+  if (band && !band.test(shop)) return false;
+
+  // 標籤採「全部符合」，勾越多條件越嚴格，符合一般人縮小範圍的直覺。
+  if (filters.tags.some((tag) => !shop.tags.includes(tag))) return false;
+
+  const keyword = filters.keyword.trim().toLowerCase();
+  if (keyword) {
+    const haystack = [shop.name, shop.enName, shop.desc, ...shop.signatures].join(' ').toLowerCase();
+    if (!haystack.includes(keyword)) return false;
+  }
+
+  return true;
+}
 
 export default function App() {
-  const {
-    orders,
-    tally,
-    loading,
-    error,
-    offline,
-    writeError,
-    ownedIds,
-    source,
-    addOrder,
-    removeOrder,
-    resetOrders,
-  } = useOrders();
-  const [page, setPage] = useState('order');
-  const [toast, setToast] = useState(null);
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [sort, setSort] = useState('default');
+  const [active, setActive] = useState(null);
+  const shortlist = useShortlist();
 
-  const handleSubmitOrder = useCallback(
-    async (payload) => {
-      const order = await addOrder(payload);
-      setToast({ title: `${order.customerName} 的餐點已加入`, description: '大家的統整已更新。' });
-      return order;
-    },
-    [addOrder]
-  );
+  const hasActiveFilter =
+    filters.keyword.trim() !== '' ||
+    filters.category !== 'all' ||
+    filters.area !== 'all' ||
+    filters.price !== 'all' ||
+    filters.tags.length > 0;
 
-  // 背景寫入失敗（例如安全規則不符）時，那筆餐點會被 Firestore 回滾，
-  // 因此一定要主動告知，不能讓它安靜消失。
-  useEffect(() => {
-    if (!writeError) return;
-    setToast({
-      title: '餐點沒有送出去',
-      description:
-        writeError.code === 'permission-denied'
-          ? 'Firestore 安全規則拒絕了這筆資料，請確認規則已更新。'
-          : '請檢查網路後再試一次。',
-      tone: 'info',
-    });
-  }, [writeError]);
-
-  const handleRemove = useCallback(
-    async (id) => {
-      const target = orders.find((order) => order.id === id);
-      const removed = await removeOrder(id);
-      setToast(
-        removed
-          ? { title: `已移除${target ? ` ${target.customerName} 的餐點` : ''}`, tone: 'info' }
-          : { title: '只能刪除自己點的餐', description: '這筆是別人送出的。', tone: 'info' }
-      );
-    },
-    [orders, removeOrder]
-  );
-
-  const handleReset = useCallback(async () => {
-    await resetOrders();
-    setToast({ title: '已重新開始一輪', tone: 'info' });
-  }, [resetOrders]);
+  const visible = useMemo(() => {
+    const list = SHOPS.filter((shop) => matches(shop, filters));
+    const sorted = [...list];
+    if (sort === 'priceAsc') sorted.sort((a, b) => a.priceMin - b.priceMin);
+    if (sort === 'priceDesc') sorted.sort((a, b) => b.priceMax - a.priceMax);
+    if (sort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'));
+    return sorted;
+  }, [filters, sort]);
 
   return (
-    <div className="min-h-screen bg-canvas">
-      <TopBar page={page} onNavigate={setPage} count={orders.length} />
-
-      <main className="mx-auto max-w-3xl px-5 pb-24 pt-4 sm:px-6 sm:pt-6">
-        {error && (
-          <p className="mb-5 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-danger ring-1 ring-inset ring-rose-100">
-            資料讀取失敗，請確認 Firebase 設定與網路狀態。
+    <div className="min-h-screen">
+      <header className="border-b border-slate-200/70 bg-white">
+        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+          <div className="flex items-center gap-2 text-brand-600">
+            <CupSoda className="h-5 w-5" />
+            <span className="text-sm font-medium tracking-wide">淡水手搖地圖</span>
+          </div>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink-900 sm:text-4xl">
+            淡水連鎖飲料店統整
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-500">
+            收錄 {SHOPS.length} 個在淡水常見的連鎖品牌，可依分類、地區、價位與特色篩選。
+            把想喝的店加進待選清單，猶豫時就讓它幫你抽一家。
           </p>
-        )}
+        </div>
+      </header>
 
-        {writeError && (
-          <div className="mb-5 flex items-start gap-2.5 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-danger ring-1 ring-inset ring-rose-100">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>
-              最後一筆餐點沒有成功送出，已經被系統退回。
-              <span className="mt-0.5 block text-xs text-danger/80">
-                {writeError.code === 'permission-denied'
-                  ? 'Firestore 安全規則拒絕了這筆資料（欄位或份數不符），請更新規則後重新點一次。'
-                  : `錯誤代碼：${writeError.code ?? '未知'}`}
-              </span>
-            </span>
-          </div>
-        )}
+      <main className="mx-auto max-w-5xl px-4 pb-32 pt-6 sm:px-6">
+        <FilterBar
+          filters={filters}
+          onChange={setFilters}
+          onReset={() => setFilters(DEFAULT_FILTERS)}
+          hasActiveFilter={hasActiveFilter}
+        />
 
-        {!error && !writeError && offline && source === 'firebase' && (
-          <div className="mb-5 flex items-start gap-2.5 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700 ring-1 ring-inset ring-amber-100">
-            <CloudOff className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>
-              尚未連上 Firestore，目前顯示的是本機快取，點的餐不會同步給其他人。
-              <span className="mt-0.5 block text-xs text-amber-600/80">
-                請確認 Firebase Console 已建立 Firestore 資料庫，以及目前的網路狀態。
-              </span>
-            </span>
-          </div>
-        )}
+        <div className="mt-6 flex items-center justify-between gap-3">
+          <p className="text-sm text-ink-500">
+            共 <span className="font-semibold tabular-nums text-ink-900">{visible.length}</span> 家
+          </p>
 
-        {loading ? (
-          <div className="flex items-center justify-center gap-2 py-24 text-sm text-ink-400">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            載入中…
+          <label className="flex items-center gap-2 text-sm text-ink-500">
+            <SlidersHorizontal className="h-4 w-4" />
+            <span className="sr-only">排序方式</span>
+            <select
+              value={sort}
+              onChange={(event) => setSort(event.target.value)}
+              className="focus-ring rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-ink-900"
+            >
+              {SORTS.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {visible.length === 0 ? (
+          <div className="mt-10 rounded-card border border-dashed border-slate-300 bg-white p-10 text-center">
+            <p className="text-sm font-medium text-ink-900">沒有符合條件的店</p>
+            <p className="mt-2 text-sm text-ink-500">試著放寬價位，或清除幾個特色標籤。</p>
           </div>
-        ) : page === 'order' ? (
-          <OrderPage onSubmit={handleSubmitOrder} onNavigate={setPage} />
-        ) : page === 'people' ? (
-          <PeoplePage
-            orders={orders}
-            ownedIds={ownedIds}
-            onRemove={handleRemove}
-            onReset={handleReset}
-            onNavigate={setPage}
-          />
         ) : (
-          <StatsPage
-            orders={orders}
-            tally={tally}
-            source={source}
-            offline={offline}
-            onNavigate={setPage}
-            onNotify={setToast}
-          />
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {visible.map((shop, index) => (
+              <ShopCard
+                key={shop.id}
+                shop={shop}
+                index={index}
+                picked={shortlist.has(shop.id)}
+                onToggle={shortlist.toggle}
+                onOpen={setActive}
+              />
+            ))}
+          </div>
         )}
+
+        <p className="mt-10 text-xs leading-relaxed text-ink-400">
+          資料整理自各品牌公開資訊，價位區間與門市分布僅供參考，實際菜單、售價與營業狀況請以官方公告為準。
+        </p>
       </main>
 
-      <Toast toast={toast} onDismiss={() => setToast(null)} />
+      <ShopDetail
+        shop={active}
+        picked={active ? shortlist.has(active.id) : false}
+        onToggle={shortlist.toggle}
+        onClose={() => setActive(null)}
+      />
+
+      <ShortlistBar
+        shops={shortlist.shops}
+        onRemove={shortlist.remove}
+        onClear={shortlist.clear}
+        onOpen={setActive}
+      />
     </div>
   );
 }
